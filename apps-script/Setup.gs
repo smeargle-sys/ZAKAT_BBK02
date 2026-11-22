@@ -46,10 +46,10 @@ function isiConfigAwal_() {
   var base = { Kg_Per_Soq: 2.7, F_Sabilillah: 40, F_Mustahiq: 45, F_AmilKlp: 11, F_AmilDesa: 3, F_AmilDaerah: 1, F_Mustahiq_Ke: 'Kelompok',
     M_Sabilillah: 40, M_Mustahiq: 45, M_AmilKlp: 8, M_AmilDesa: 4, M_AmilDaerah: 3, M_Mustahiq_Ke: 'Daerah' };
   var awal = [
-    { Tahun: 2024, Hijriah: '1445 H', Tgl_Idul_Fitri: '2024-04-10', Batas_Fitrah: '2024-04-10 06:00', Tutup_Rekap_Mal: '2024-04-10', Harga_Soq: 45000, Status: 'TUTUP', Jiwa_Sensus: 280, Jiwa_Mustahiq: 95, Catatan: 'Impor dari sheet lama' },
-    { Tahun: 2025, Hijriah: '1446 H', Tgl_Idul_Fitri: '2025-03-31', Batas_Fitrah: '2025-03-31 06:00', Tutup_Rekap_Mal: '2025-03-31', Harga_Soq: 40000, Status: 'TUTUP', Jiwa_Sensus: 269, Jiwa_Mustahiq: 100, Catatan: 'Impor dari sheet lama' },
-    { Tahun: 2026, Hijriah: '1447 H', Tgl_Idul_Fitri: '2026-03-20', Batas_Fitrah: '2026-03-20 06:00', Tutup_Rekap_Mal: '2026-03-20', Harga_Soq: 40000, Status: 'TUTUP', Jiwa_Sensus: 264, Jiwa_Mustahiq: 106, Catatan: 'Impor dari sheet lama' },
-    { Tahun: 2027, Hijriah: '1448 H', Tgl_Idul_Fitri: '2027-03-10', Batas_Fitrah: '2027-03-10 06:00', Tutup_Rekap_Mal: '2027-03-10', Harga_Soq: 40000, Status: 'BUKA', Catatan: 'Tanggal & harga masih perkiraan, sesuaikan di Konfigurasi' }
+    { Tahun: 2024, Hijriah: '1445 H', Tgl_Idul_Fitri: '2024-04-10', Batas_Fitrah: '2024-04-10 06:00', Tutup_Rekap_Mal: '2024-04-10', Harga_Soq: 45000, Tarif_Fidyah: 15000, Status: 'TUTUP', Jiwa_Sensus: 280, Jiwa_Mustahiq: 95, Catatan: 'Impor dari sheet lama' },
+    { Tahun: 2025, Hijriah: '1446 H', Tgl_Idul_Fitri: '2025-03-31', Batas_Fitrah: '2025-03-31 06:00', Tutup_Rekap_Mal: '2025-03-31', Harga_Soq: 40000, Tarif_Fidyah: 15000, Status: 'TUTUP', Jiwa_Sensus: 269, Jiwa_Mustahiq: 100, Catatan: 'Impor dari sheet lama' },
+    { Tahun: 2026, Hijriah: '1447 H', Tgl_Idul_Fitri: '2026-03-20', Batas_Fitrah: '2026-03-20 06:00', Tutup_Rekap_Mal: '2026-03-20', Harga_Soq: 40000, Tarif_Fidyah: 15000, Status: 'TUTUP', Jiwa_Sensus: 264, Jiwa_Mustahiq: 106, Catatan: 'Impor dari sheet lama' },
+    { Tahun: 2027, Hijriah: '1448 H', Tgl_Idul_Fitri: '2027-03-10', Batas_Fitrah: '2027-03-10 06:00', Tutup_Rekap_Mal: '2027-03-10', Harga_Soq: 40000, Kg_Per_Soq: 2.7, Tarif_Fidyah: 15000, Status: 'BUKA', Catatan: 'Siap UAT' }
   ].filter(function (r) { return ada.indexOf(String(r.Tahun)) < 0; })
    .map(function (r) { var o = {}; Object.keys(base).forEach(function (k) { o[k] = base[k]; }); Object.keys(r).forEach(function (k) { o[k] = r[k]; }); return o; });
   appendObjects_('Config_Tahun', awal);
