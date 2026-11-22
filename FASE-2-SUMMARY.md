@@ -143,15 +143,17 @@ SEMUA TEST LULUS ✓
 ## 📌 Important Notes
 
 ### API_URL Configuration
-✅ **Sudah diset:** `https://script.google.com/macros/s/AKfycbyygSgPwmFyhIJ48Q8E5KAyFn4jKpCgjvMTAQ-Gao4NkIKOu-fgiVTdsR3j1tdSnfc/exec`
+✅ **Sudah diset:** URL produksi Web App sudah di-isi di `web/config.js`
 
-Jika perlu update (URL deployment berubah):
+**CATATAN SECURITY:** URL `/exec` production tidak disimpan di dokumentasi atau repo (private hanya di local config). Jika perlu update:
 ```bash
-# Edit web/config.js, ubah API_URL
-# Commit & push
+# 1. Edit web/config.js — ubah API_URL saja (URL tidak ditulis di dokumen)
+# 2. Commit & push
 git add web/config.js
 git commit -m "Update Web App URL"
 git push
+
+# JANGAN: commit URL ke dokumentasi atau README (privacy/security risk)
 ```
 
 ### Cache-Busting Version
