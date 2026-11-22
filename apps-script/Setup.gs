@@ -17,7 +17,7 @@ function onOpen() {
  * tahun aktif, supaya pembukaan pertama di HP tidak menunggu perhitungan.
  * Cara pasang (sekali, tanpa izin tambahan): editor Apps Script › Triggers (ikon jam) › Add Trigger ›
  * function hangatkanCache · Time-driven · Minutes timer · Every 10 minutes.
- * Sengaja tidak memakai ScriptApp.newTrigger: itu menambah izin baru yang bisa membuat Web App
+ * Trigger sengaja tidak dibuat lewat kode: itu menambah izin baru yang bisa membuat Web App
  * gagal sampai pemilik menyetujui ulang.
  */
 function hangatkanCache() {
