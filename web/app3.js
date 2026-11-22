@@ -179,10 +179,12 @@
         '</tbody></table></div>' + (d.belum.length > 15 ? '<div class="foot noprint"><button type="button" class="btn sm" data-act="belumAll">' + (D_belumAll ? 'Tampilkan 15 saja' : 'Tampilkan semua ' + d.belum.length + ' KK') + '</button></div>' : '') +
         belumTanpaKK(d.belumTanpaKK || []), f.kkKurang ? '<span class="chip red">' + f.kkKurang + ' kurang bayar · ' + rp(f.kurang) + '</span>' : '') : '') +
 
+      (S.role !== 'amil' ? '<div id="dMustahiq"></div>' : '') +
       card('Setoran terbaru', '15 transaksi terakhir', setoranTable(d.terbaru, false), '<a class="btn sm noprint" href="#/setoran?tahun=' + d.tahun + '">Lihat semua</a>') +
       '</div>';
     Z.app.innerHTML = html;
     $('#dTahun').addEventListener('change', function (e) { S.tahun = Number(e.target.value); Z.viewDash(S.tahun); });
+    if (Z.kartuMustahiq) Z.kartuMustahiq(d.tahun);
     $$('[data-bag]').forEach(function (inp) { inp.addEventListener('input', function () { hitungSisaBagian(inp.getAttribute('data-lp')); }); });
   }
   function belumTanpaKK(rows) {
@@ -473,6 +475,7 @@
         (CF.sm.length ? CF.sm.map(function (m, i) { return '<tr><td><b>' + esc(m.nama) + '</b></td><td>' + esc(m.jk || '—') + '</td><td><span class="chip ' + (m.kkNama ? 'mint' : 'blue') + '">' + esc(m.kkNama ? 'KK ' + m.kkNama : 'Berdiri sendiri') + '</span></td><td>' + esc(m.hubungan || '—') + '</td><td class="r"><button type="button" class="btn sm" data-act="smEdit" data-i="' + i + '">Ubah</button></td></tr>'; }).join('') : '<tr><td colspan="5" class="sub">Belum ada simpatisan.</td></tr>') +
         '</tbody></table></div>', '<button type="button" class="btn pri sm" data-act="smEdit" data-i="-1">' + ICON.plus + 'Tambah simpatisan</button>') +
 
+      (Z.ttdCard ? Z.ttdCard(c) : '') +
       card('Pengguna Admin &amp; Pengurus', 'Login dengan PIN pribadi · nama dikenali dari PIN · 5 kali salah dikunci 15 menit · sesi 6 jam',
         '<div class="tbl"><table><thead><tr><th>Nama</th><th>Peran</th><th>PIN login</th><th>Status</th><th></th></tr></thead><tbody>' +
         CF.pengguna.map(function (u, i) { return '<tr><td><b>' + esc(u.nama) + '</b></td><td><span class="chip ' + (u.peran === 'ADMIN' ? 'mint' : 'blue') + '">' + (u.peran === 'ADMIN' ? 'Admin' : 'Pengurus') + '</span></td><td>' + (u.punyaPin ? '<span class="chip ok">Sudah diatur</span>' : '<span class="chip red">Belum ada PIN</span>') + '</td><td>' + (u.aktif ? '<span class="chip ok">Aktif</span>' : '<span class="chip">Nonaktif</span>') + '</td><td class="r"><button type="button" class="btn sm" data-act="userModal" data-i="' + i + '">Ubah</button></td></tr>'; }).join('') +

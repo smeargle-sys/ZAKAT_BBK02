@@ -52,8 +52,14 @@ function getFitrah_(p) {
 
 function cleanRow_(r) { var o = {}; Object.keys(r).forEach(function (k) { if (k !== '_row') o[k] = r[k]; }); return o; }
 
+/** Saat mengubah, tahun selalu tahun data aslinya (setoran lama tidak boleh pindah ke tahun aktif). */
+function tahunDataLama_(sheet, id) {
+  var r = id ? rowsOf_(sheet, function (x) { return String(x.ID) === String(id); })[0] : null;
+  return r ? Number(r.Tahun) : 0;
+}
+
 function simpanFitrah_(p, s) {
-  var tahun = Number(p.tahun || tahunAktif_().Tahun);
+  var tahun = tahunDataLama_('Setoran_Fitrah', p.id) || Number(p.tahun || tahunAktif_().Tahun);
   var c = cfg_(tahun);
   if (c.Status !== 'BUKA' && s.role !== 'admin') throw new Error('Penerimaan zakat ' + c.Hijriah + ' sudah ditutup.');
   var batas = parseDateTime_(c.Batas_Fitrah);
@@ -152,7 +158,7 @@ function hapusFitrah_(p, s) {
 
 /** Zakat Mal / Tijaroh / Mal+Tijaroh / Fidyah. */
 function simpanLain_(p, s) {
-  var tahun = Number(p.tahun || tahunAktif_().Tahun);
+  var tahun = tahunDataLama_('Zakat_Lain', p.id) || Number(p.tahun || tahunAktif_().Tahun);
   var c = cfg_(tahun);
   var jenis = String(p.jenis || '').toUpperCase();
   if (JENIS_LAIN.indexOf(jenis) < 0) throw new Error('Jenis tidak valid.');

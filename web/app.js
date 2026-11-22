@@ -169,6 +169,8 @@
     { h: '#/dash', t: 'Pemantauan', roles: ['admin', 'amil', 'pengurus'] },
     { h: '#/tren', t: 'Tren Tahunan', roles: ['admin', 'amil', 'pengurus'] },
     { h: '#/setoran', t: 'Data Setoran', roles: ['admin', 'amil', 'pengurus'] },
+    { h: '#/mustahiq', t: 'Mustahiq', roles: ['admin', 'pengurus'] },
+    { h: '#/laporan', t: 'Laporan', roles: ['admin', 'pengurus'] },
     { h: '#/config', t: 'Konfigurasi', roles: ['admin'] }
   ];
   function renderTop(active) {
@@ -213,6 +215,9 @@
       case 'tren': return viewTren();
       case 'setoran': return viewSetoran(q.tahun);
       case 'config': return viewConfig(q.tahun);
+      // D-35/D-36: amil tidak punya akses (backend juga menolak)
+      case 'mustahiq': if (S.role === 'amil') return go('#/dash'); return window.__Z.viewMustahiq(q.tahun);
+      case 'laporan': if (S.role === 'amil') return go('#/dash'); return window.__Z.viewLaporan(q);
       default: go('#/dash');
     }
   }

@@ -17,15 +17,18 @@ apps-script/              Backend Google Apps Script (semua file berbagi global 
   Fitrah.gs               kkList_, simpan/ubah/hapus setoran fitrah, zakat lain (mal/tijaroh/fidyah), daftar setoran
   Dashboard.gs            ringkasTahun_ (agregasi), dashboard_, tren_
   Matcher.gs              normName_, matchName_ (pencocok nama → sensus)
+  Mustahiq.gs             daftar mustahiq, pembagian per jiwa (soq bulat per KK), penyerahan, penandatangan laporan (D-35, D-36)
+  HapusMassal.gs          hapus massal setoran satu tahun + pulihkan (menu spreadsheet, D-37)
   ImportParse.gs          parser murni sheet lama (muzakki, mal, bagian amil)
   Import.gs               imporSemua / imporTahun_ / terapkanReviewImpor
 web/                      Frontend GitHub Pages
-  index.html              shell: topbar, #app, modal, toast; memuat config.js, app.js, app2.js, app3.js
+  index.html              shell: topbar, #app, modal, toast; memuat config.js, app.js, app2.js, app3.js, app4.js
   config.js               window.ZAKAT_CONFIG.API_URL
   style.css               design tokens & komponen (lihat ui-design-system.md)
   app.js                  util, state S, api(), router hash, topbar, login, beranda amil
   app2.js                 form fitrah, modal simpatisan, form mal/tijaroh/fidyah
   app3.js                 dashboard pemantauan, tren, data setoran, konfigurasi
+  app4.js                 mustahiq, laporan resmi (cetak/PDF), penandatangan, kartu penyaluran
 tests/                    Test Node tanpa dependency (simulasi Apps Script)
   gas-mock.js             tiruan SpreadsheetApp, CacheService, dll + memuat semua .gs
   fixtures/sensus-fixture.js  data sensus SINTETIS

@@ -19,7 +19,8 @@ Skema resmi ada di `SHEETS` di `apps-script/00_Config.gs`. Tabel di bawah menjel
 | F_Sabilillah, F_Mustahiq, F_AmilKlp, F_AmilDesa, F_AmilDaerah, F_Mustahiq_Ke | persentase fitrah (total 100) dan tujuan mustahiq |
 | M_… | sama, untuk mal & tijaroh |
 | Jiwa_Sensus, KK_Sensus | snapshot saat tahun ditutup (historis diisi dari sheet lama) |
-| Jiwa_Mustahiq | sementara diisi manual (backlog mustahiq) |
+| Jiwa_Mustahiq | angka manual untuk tahun tanpa daftar mustahiq (2024–2026). Tahun dengan daftar memakai jumlah dari sheet `Mustahiq` |
+| Penandatangan | JSON `[{jabatan, nama}]` untuk laporan resmi (D-36). Kosong = jabatan default format 2025. Disalin saat tahun baru |
 
 ## Amil (per tahun)
 `Tahun, ID_Amil, Nama, ID_Jamaah, Jabatan, Saham, Aktif, PIN_Hash`
@@ -46,6 +47,15 @@ Skema resmi ada di `SHEETS` di `apps-script/00_Config.gs`. Tabel di bawah menjel
 ## Zakat_Lain
 `ID, Tahun, Tanggal, Waktu_Input, Jenis(MAL|TIJAROH|MAL_TIJAROH|FIDYAH), Lampiran(UTAMA|SUSULAN|''), Ref_Tipe(JM|SM|KK|LAIN), Ref_ID, Nama, ID_Keluarga, Nominal, Hari_Fidyah, Cara_Bayar, ID_Amil, Nama_Amil, Catatan, Sumber, Dihapus, Diubah_Oleh, Diubah_Waktu, Dicatat_Oleh`
 
+## Mustahiq (per tahun, D-35)
+`ID, Tahun, Tipe(JM|LUAR), Ref_ID, Nama, ID_Keluarga, Nama_KK, Jiwa, Asnaf(FAKIR|MISKIN|GHORIM|MUALAF|IBNU_SABIL|SABILILLAH), Catatan, Dihapus, Dibuat_Oleh, Dibuat_Waktu, Diubah_Oleh, Diubah_Waktu`
+- **JM:** 1 baris per jiwa sensus (`Jiwa=1`), satu jamaah hanya sekali per tahun.
+- **LUAR:** penerima luar sensus, `ID_Keluarga = LUAR-<ID>`, `Jiwa >= 1`.
+- **Pembagian:** pos Mustahiq fitrah dibagi rata per jiwa, dibulatkan jadi soq bulat per KK (sisa terbesar). Hasilnya dihitung, tidak disimpan.
+
+## Mustahiq_Serah (penyerahan per KK penerima)
+`ID, Tahun, ID_Keluarga, Nama_KK, Soq, Kg, Tanggal, Oleh, Catatan, Dihapus`. Menyimpan soq/kg **saat diserahkan**.
+
 ## Tabel pendukung
 - **Pembelian_Beras:** `ID, Tahun, Tanggal, Kg, Rupiah, Catatan, Oleh, Dihapus`
 - **Serah_UB:** `ID, Tahun, Tanggal, ID_Amil, Nama_Amil, Nominal, Penerima, Catatan, Oleh, Dihapus`
@@ -59,7 +69,8 @@ Skema resmi ada di `SHEETS` di `apps-script/00_Config.gs`. Tabel di bawah menjel
 3. `Total_Jiwa = Jiwa_JM + Jiwa_SM + Jiwa_Luar` (data APP).
 4. UANG: `Selisih_Rp = Diterima_Rp − Wajib_Rp`, dan `Status_Bayar = KURANG` ⇔ selisih < 0.
 5. Persentase F_* dan M_* masing-masing berjumlah 100.
-6. Baris tidak pernah dihapus fisik dari tabel transaksi (soft delete), kecuali impor ulang baris `Sumber = IMPOR`.
+6. Baris tidak pernah dihapus fisik dari tabel transaksi (soft delete), kecuali impor ulang baris `Sumber = IMPOR` dan hapus massal `Bagian_Amil` (isinya disimpan di Log untuk dipulihkan, D-37).
+7. Σ soq mustahiq per KK = pos Mustahiq fitrah (bila tujuannya Kelompok).
 
 ## Migrasi skema
 - **Kolom baru:** tambahkan di akhir array `SHEETS`, lalu jalankan `setupZakat()`. Fungsi ini aman dijalankan ulang dan hanya menambah kolom yang belum ada.

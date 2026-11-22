@@ -42,6 +42,7 @@ function bootstrap_(p, s) {
   var c = cfg_(tahun);
   return {
     sesi: s, tahunAktif: aktif.Tahun, kelompok: APP.KELOMPOK,
+    wilayah: { no: APP.KELOMPOK_NO, desa: APP.DESA, daerah: APP.DAERAH },
     tahunList: configs_().map(function (x) { return { tahun: x.Tahun, hijriah: x.Hijriah, status: x.Status }; }),
     config: c, batasLewat: batasFitrahLewat_(c), amil: daftarAmil_(tahun), now: nowIso_()
   };

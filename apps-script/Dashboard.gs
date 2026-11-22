@@ -58,7 +58,8 @@ function ringkasTahun_(tahun, detail) {
     fitrah: fit, mal: mal, malTotal: malTotal,
     malMuzakki: Object.keys(lainMal.reduce(function (a, r) { a[normName_(r.Nama).join(' ')] = 1; return a; }, {})).length,
     fidyah: { total: sum_(fid, function (r) { return num_(r.Nominal); }), orang: fid.length },
-    jiwaMustahiq: num_(c.Jiwa_Mustahiq),
+    // D-35: tahun yang punya daftar mustahiq memakai jumlah dari daftar; tahun lama memakai angka manual
+    jiwaMustahiq: jiwaMustahiqDaftar_(tahun) || num_(c.Jiwa_Mustahiq),
     jumlahAmil: daftarAmil_(tahun).filter(function (a) { return a.aktif; }).length
   };
   if (!detail) return out;
@@ -67,7 +68,7 @@ function ringkasTahun_(tahun, detail) {
   var fParts = [{ key: 'sabilillah', pct: c.F_Sabilillah }, { key: 'mustahiq', pct: c.F_Mustahiq }, { key: 'amilKlp', pct: c.F_AmilKlp }, { key: 'amilDesa', pct: c.F_AmilDesa }, { key: 'amilDaerah', pct: c.F_AmilDaerah }];
   var mParts = [{ key: 'sabilillah', pct: c.M_Sabilillah }, { key: 'mustahiq', pct: c.M_Mustahiq }, { key: 'amilKlp', pct: c.M_AmilKlp }, { key: 'amilDesa', pct: c.M_AmilDesa }, { key: 'amilDaerah', pct: c.M_AmilDaerah }];
   var tujuan = { sabilillah: 'Daerah', mustahiq: null, amilKlp: 'Kelompok', amilDesa: 'Desa', amilDaerah: 'Daerah' };
-  var bf = splitLargestRemainder_(fit.soqDiterima, fParts);
+  var bf = bagiFitrah_(c, fit.soqDiterima);
   out.pembagianFitrah = fParts.map(function (x) { return { key: x.key, pct: x.pct, soq: bf[x.key], kg: bf[x.key] * num_(c.Kg_Per_Soq), ke: tujuan[x.key] || c.F_Mustahiq_Ke || 'Kelompok' }; });
   out.pembagianMal = {};
   ['UTAMA', 'SUSULAN'].forEach(function (lp) {
@@ -157,6 +158,7 @@ function ringkasTahun_(tahun, detail) {
   out.hMinus = idf ? Math.ceil((idf - new Date(fmtDate_(new Date()) + 'T00:00:00+07:00')) / 864e5) : null;
   if (out.progres) out.progres.hMinus = out.hMinus;
   out.config = c;
+  out.penandatangan = penandatangan_(c);
   out.batasLewat = batasFitrahLewat_(c);
   out.diperbarui = nowIso_();
   return out;
@@ -201,4 +203,14 @@ function progresJamaah_(kk, F, c, jiwaTotal) {
     else if (sudah > 0) o.kkSebagian++;
   });
   return o;
+}
+
+/** Pembagian zakat fitrah (soq) dengan sisa terbesar: dipakai Pemantauan, laporan, dan mustahiq. */
+function bagiFitrah_(c, soq) {
+  return splitLargestRemainder_(soq, [{ key: 'sabilillah', pct: num_(c.F_Sabilillah) }, { key: 'mustahiq', pct: num_(c.F_Mustahiq) },
+    { key: 'amilKlp', pct: num_(c.F_AmilKlp) }, { key: 'amilDesa', pct: num_(c.F_AmilDesa) }, { key: 'amilDaerah', pct: num_(c.F_AmilDaerah) }]);
+}
+
+function jiwaMustahiqDaftar_(tahun) {
+  return sum_(mustahiqTahun_(tahun), function (r) { return r.Tipe === 'LUAR' ? Math.max(1, Math.round(num_(r.Jiwa))) : 1; });
 }

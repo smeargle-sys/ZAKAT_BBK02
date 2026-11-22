@@ -9,6 +9,9 @@ function onOpen() {
     .addItem('4. Terapkan hasil review impor', 'terapkanReviewImpor')
     .addSeparator()
     .addItem('Cek koneksi ke sensus', 'cekSensus')
+    .addSeparator()
+    .addItem('Hapus massal setoran satu tahun (force majeure)', 'menuHapusMassal')
+    .addItem('Pulihkan hapus massal', 'menuPulihkanMassal')
     .addToUi();
 }
 

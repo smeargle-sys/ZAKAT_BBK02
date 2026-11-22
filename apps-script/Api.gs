@@ -45,7 +45,12 @@ function routes_() { return {
   hapusBeli:         { roles: ['admin'], fn: function (p, s) { return hapusSoft_('Pembelian_Beras', p.id, s); } },
   simpanBagianAmil:  { roles: ['admin'], fn: simpanBagianAmil_ },
   daftarPengguna:    { roles: ['admin'], fn: daftarPengguna_ },
-  simpanPengguna:    { roles: ['admin'], fn: simpanPengguna_ }
+  simpanPengguna:    { roles: ['admin'], fn: simpanPengguna_ },
+  // Mustahiq & laporan (D-35, D-36): amil tidak punya akses
+  daftarMustahiq:    { roles: ['admin', 'pengurus'], fn: daftarMustahiq_ },
+  simpanMustahiq:    { roles: ['admin'], fn: simpanMustahiq_ },
+  serahMustahiq:     { roles: ['admin'], fn: serahMustahiq_ },
+  simpanPenandatangan: { roles: ['admin'], fn: simpanPenandatangan_ }
 }; }
 
 function handle_(p) {
@@ -82,7 +87,7 @@ function handle_(p) {
  * p.segar = true → lewati cache (tombol muat ulang).
  */
 function kunciCache_(p, sess) {
-  var boleh = { dashboard: 1, tren: 1, kkList: 1, daftarSetoran: 1 };
+  var boleh = { dashboard: 1, tren: 1, kkList: 1, daftarSetoran: 1, daftarMustahiq: 1 };
   if (!boleh[p.action] || p.segar) return '';
   var ver = versiData_();
   if (!ver) return '';
@@ -92,7 +97,7 @@ function kunciCache_(p, sess) {
 /** Bagian kunci cache yang bergantung pada sesi: ringkasan "saya" per amil, dan isi dashboard admin vs lainnya (D-34). */
 function varianCache_(action, sess) {
   if (action === 'kkList') return sess ? sess.idAmil || '' : '';
-  if (action === 'dashboard') return sess && sess.role === 'admin' ? 'admin' : 'umum';
+  if (action === 'dashboard' || action === 'daftarMustahiq') return sess && sess.role === 'admin' ? 'admin' : 'umum';
   return '';
 }
 

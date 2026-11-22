@@ -144,7 +144,26 @@ Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfiguras
   - di form mal/fidyah, "Terpilih: …" ikut hilang.
 - **Bagian amil kelompok:** login amil dan pengurus → Pemantauan **tidak** menampilkan kartu "Bagian amil kelompok". Login admin → kartu tampil dan hasil musyawarah tetap bisa diisi.
 
-## Hasil yang Diharapkan
+### 16. Mustahiq, laporan resmi & hapus massal (v1.5)
+**Persiapan (sekali):** jalankan `setupZakat` (menu Zakat › 1) supaya sheet `Mustahiq`, `Mustahiq_Serah`, dan kolom `Penandatangan` dibuat.
+
+- **Menu:** login admin/pengurus → ada menu **Mustahiq** dan **Laporan**. Login amil → tidak ada, dan membuka `#/mustahiq` dialihkan ke Pemantauan.
+- **Kandidat (admin):** Mustahiq → kartu "Kandidat dari sensus" berisi jamaah "Perlu Dibantu" → centang beberapa, pilih asnaf → Tambahkan. Tambahkan juga satu jamaah lewat *Cari jamaah sensus* dan satu *Penerima luar sensus* (mis. 3 jiwa).
+- **Pembagian:** jumlah soq semua KK = bagian mustahiq (kartu gelap). Total tidak pernah lebih atau kurang.
+- **Penyerahan:**
+  - *Tandai diserahkan* → chip hijau;
+  - tambah setoran fitrah baru → baris itu bertanda "Berubah" → *Tandai ulang*;
+  - *Batal* menghapus tanda.
+- **Pengurus:** melihat daftar yang sama tanpa kandidat dan tanpa tombol ubah/tandai. Pemantauan menampilkan kartu "Penyaluran mustahiq".
+- **Penandatangan:** Konfigurasi → *Penandatangan laporan* → isi nama → Simpan.
+- **Laporan:** Laporan → cek kelima jenis, lalu *Cetak / Simpan PDF* (pilih "Simpan sebagai PDF"):
+  - Muzakki Zakat Fitrah (mendatar): total tanpa zakat di kampung, pembagian pas;
+  - Zakat Mal Utama/Susulan: bagian A–D cocok dengan Pemantauan;
+  - Daftar Mustahiq: kepala keluarga tebal, urut per KK;
+  - Lembar Penyerahan: per KK dengan kolom tanda tangan.
+- **Hapus massal (uji di tahun uji/kosong saja!):** menu Zakat › *Hapus massal setoran satu tahun* → isi tahun → baca ringkasan → ketik `HAPUS <tahun>` → catat kode batch → Pemantauan tahun itu kosong. Lalu menu Zakat › *Pulihkan hapus massal* → kode batch → data kembali.
+
+
 
 **Sukses UAT jika:**
 1. Semua skenario berjalan tanpa error

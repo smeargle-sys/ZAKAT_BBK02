@@ -6,6 +6,10 @@
 var APP = {
   NAMA: 'Zakat BBK02',
   KELOMPOK: 'Kelompok Babakan Barat',
+  // Kepala laporan resmi (D-36)
+  KELOMPOK_NO: '2',
+  DESA: 'Babakan',
+  DAERAH: 'Tangerang Selatan',
 
   // Spreadsheet SENSUS BBK02 Dashboard (sumber tunggal data KK & jamaah, hanya dibaca)
   SENSUS_ID: '1jgTL5COMzaDnvnnOTL_0DhQOlycHFaSS7HavLhR7IW0',
@@ -30,7 +34,7 @@ var SHEETS = {
   Config_Tahun: ['Tahun', 'Hijriah', 'Tgl_Idul_Fitri', 'Batas_Fitrah', 'Tutup_Rekap_Mal', 'Harga_Soq', 'Kg_Per_Soq', 'Tarif_Fidyah', 'Status',
     'F_Sabilillah', 'F_Mustahiq', 'F_AmilKlp', 'F_AmilDesa', 'F_AmilDaerah', 'F_Mustahiq_Ke',
     'M_Sabilillah', 'M_Mustahiq', 'M_AmilKlp', 'M_AmilDesa', 'M_AmilDaerah', 'M_Mustahiq_Ke',
-    'Jiwa_Sensus', 'KK_Sensus', 'Jiwa_Mustahiq', 'Catatan'],
+    'Jiwa_Sensus', 'KK_Sensus', 'Jiwa_Mustahiq', 'Catatan', 'Penandatangan'],
   Amil: ['Tahun', 'ID_Amil', 'Nama', 'ID_Jamaah', 'Jabatan', 'Saham', 'Aktif', 'PIN_Hash'],
   Pengguna: ['ID', 'Nama', 'Peran', 'PIN_Hash', 'Aktif', 'Dibuat'],
   Simpatisan: ['ID_SM', 'Nama', 'JK', 'ID_Keluarga', 'Hubungan', 'No_HP', 'Catatan', 'Dibuat'],
@@ -41,6 +45,9 @@ var SHEETS = {
   Zakat_Lain: ['ID', 'Tahun', 'Tanggal', 'Waktu_Input', 'Jenis', 'Lampiran', 'Ref_Tipe', 'Ref_ID', 'Nama', 'ID_Keluarga',
     'Nominal', 'Hari_Fidyah', 'Cara_Bayar', 'ID_Amil', 'Nama_Amil', 'Catatan', 'Sumber', 'Dihapus', 'Diubah_Oleh', 'Diubah_Waktu', 'Dicatat_Oleh'],
   Pembelian_Beras: ['ID', 'Tahun', 'Tanggal', 'Kg', 'Rupiah', 'Catatan', 'Oleh', 'Dihapus'],
+  // Mustahiq zakat fitrah (D-35): 1 baris per jiwa sensus / per penerima luar sensus (Jiwa >= 1)
+  Mustahiq: ['ID', 'Tahun', 'Tipe', 'Ref_ID', 'Nama', 'ID_Keluarga', 'Nama_KK', 'Jiwa', 'Asnaf', 'Catatan', 'Dihapus', 'Dibuat_Oleh', 'Dibuat_Waktu', 'Diubah_Oleh', 'Diubah_Waktu'],
+  Mustahiq_Serah: ['ID', 'Tahun', 'ID_Keluarga', 'Nama_KK', 'Soq', 'Kg', 'Tanggal', 'Oleh', 'Catatan', 'Dihapus'],
   Serah_UB: ['ID', 'Tahun', 'Tanggal', 'ID_Amil', 'Nama_Amil', 'Nominal', 'Penerima', 'Catatan', 'Oleh', 'Dihapus'],
   Bagian_Amil: ['Tahun', 'Lampiran', 'ID_Amil', 'Nama', 'Beras_Final_Soq', 'Uang_Final_Rp', 'Catatan', 'Diubah'],
   Impor_Review: ['Tahun', 'Sumber_Sheet', 'Baris', 'Nama_Asli', 'Jiwa_JM', 'Jiwa_SM', 'Status', 'Skor', 'Saran_ID_Keluarga', 'Saran_Nama',
@@ -51,3 +58,6 @@ var SHEETS = {
 
 var JENIS_FITRAH = { BERAS: 'BERAS', UANG: 'UANG', KAMPUNG: 'KAMPUNG' };
 var JENIS_LAIN = ['MAL', 'TIJAROH', 'MAL_TIJAROH', 'FIDYAH'];
+
+// Golongan penerima zakat (asnaf) untuk daftar mustahiq
+var ASNAF = ['FAKIR', 'MISKIN', 'GHORIM', 'MUALAF', 'IBNU_SABIL', 'SABILILLAH'];
