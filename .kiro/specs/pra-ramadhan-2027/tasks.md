@@ -22,7 +22,8 @@ Target: semua selesai dan ikut UAT (zakat-mvp task 25–29) **sebelum ±Februari
 - [x] 9. `npm test` + `npm run ui` lulus. Naikkan `?v=` di `web/index.html`.
 
 ## Rilis
-- [ ] 10. 👤 `clasp push` → Manage deployments › **New version** (jangan membuat deployment baru) → jalankan `setupZakat` sekali (kolom baru). Lalu push `main` untuk web.
+- [~] 10. 👤 `clasp push` → Manage deployments › **New version** (jangan membuat deployment baru) → jalankan `setupZakat` sekali (kolom baru). Lalu push `main` untuk web.
+  - _2026-11-22: selesai lewat clasp. Deployment produksi `AKfycbyygSg…` @2 "fixing v1.2" (URL tetap), `ping` /exec OK, web v1.2.0 live. **Sisa: pemilik menjalankan `setupZakat` sekali.**_
 - [x] 11. Laporan → `docs/handoff/2026-11-22-laporan-pra-ramadhan.md`. Uji asap di lingkungan asli dilakukan pemilik saat UAT (skenario 11–13 di panduan UAT).
 - [x] 12. Tambahkan skenario fitur ini ke `docs/panduan/uat-fase-3.md`.
 

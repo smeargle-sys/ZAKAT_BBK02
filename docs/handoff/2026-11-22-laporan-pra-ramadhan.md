@@ -48,6 +48,12 @@
 - **Di frontend:** halaman yang sudah pernah dibuka tampil dalam ±10 ms tanpa "Memuat…".
 - **Batas yang tidak bisa dihilangkan:** waktu "bangun" Apps Script (±1–2 detik) pada panggilan pertama tetap ada. Itu batas platform gratis.
 
+## Status deploy (2026-11-22 20:12 WIB)
+- **Backend:** `clasp push` → versi 2 "fixing v1.2" → `clasp update-deployment` ke deployment produksi (ID sama, URL `/exec` tidak berubah). `ping` lewat GET & POST OK.
+- **Manifest:** blok `webapp` dikembalikan (`e8cc7b1`). Sebelumnya blok ini hilang dari HEAD, dan tanpa blok ini versi baru akan mematikan `/exec`.
+- **Web:** v1.2.0 live di GitHub Pages.
+- **Sisa:** 👤 `setupZakat` sekali (kolom `Dicatat_Oleh`).
+
 ## Perubahan skema / deploy (👤 pemilik)
 1. `clasp push`.
 2. **Deploy › Manage deployments › ✏️ › Version: New version.** Jangan membuat deployment baru.
