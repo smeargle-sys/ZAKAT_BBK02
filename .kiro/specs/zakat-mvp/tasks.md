@@ -1,6 +1,6 @@
 # Tasks — Zakat BBK02 MVP
 
-Legenda: `[x]` selesai · `[ ]` belum · ⏸ menunggu konsultan · 👤 perlu dikerjakan pemilik (akses Google/HP)
+Legenda: `[x]` selesai · `[~]` sebagian (lihat catatan) · `[ ]` belum · ⏸ menunggu konsultan · 👤 perlu dikerjakan pemilik (akses Google/HP)
 
 ## Fase 1 — Pembangunan MVP (SELESAI, teruji di simulasi)
 - [x] 1. Skema sheet & setup (`00_Config.gs`, `Setup.gs`): Config_Tahun 2024–2027, menu Zakat. _Req 13_
@@ -21,22 +21,27 @@ Legenda: `[x]` selesai · `[ ]` belum · ⏸ menunggu konsultan · 👤 perlu di
 - [x] 16. Test Node (simulasi Apps Script) + dev server + smoke UI + privacy scan.
 
 ## Fase 2 — Pemasangan & impor (go-live)
-- [ ] 17. 👤 Buat spreadsheet `ZAKAT BBK02` di akun pemilik. Tempel `apps-script/*` + manifest. Jalankan `setupZakat`. (`#release-runbook` langkah 1–3)
-- [ ] 18. 👤 Buat akun Admin pertama (menu Zakat › Buat akun Admin).
-- [ ] 19. 👤 Jalankan impor 2024–2026 dan pastikan semua `Impor_Log` = SAMA.
+- [x] 17. 👤 Buat spreadsheet `ZAKAT BBK02` di akun pemilik. Tempel `apps-script/*` + manifest. Jalankan `setupZakat`. (`#release-runbook` langkah 1–3)
+- [x] 18. 👤 Buat akun Admin pertama (menu Zakat › Buat akun Admin).
+- [x] 19. 👤 Jalankan impor 2024–2026 dan pastikan semua `Impor_Log` = SAMA.
   - Jika ada `BEDA` → ⏸ buat handoff ke konsultan berisi angka per cek.
-- [ ] 20. 👤 Review `Impor_Review`: isi `Pilih_ID_Keluarga` / `Jadikan_SM`, lalu Terapkan hasil review.
+- [~] 20. 👤 Review `Impor_Review`: isi `Pilih_ID_Keluarga` / `Jadikan_SM`, lalu Terapkan hasil review.
   - Kiro boleh membantu menyusun daftar saran, tapi **tidak** memutuskan kecocokan nama.
-- [ ] 21. 👤 Deploy Web App (Execute as Me, Anyone) dan salin URL `/exec`.
-- [ ] 22. Isi `web/config.js` dengan URL produksi, tambahkan cache-busting `?v=` di `index.html`, lalu siapkan repo GitHub + Pages.
+  - _Catatan 2026-11-22: `Impor_Review` sudah terisi, tapi review belum diterapkan._
+- [x] 21. 👤 Deploy Web App (Execute as Me, Anyone) dan salin URL `/exec`.
+- [x] 22. Isi `web/config.js` dengan URL produksi, tambahkan cache-busting `?v=` di `index.html`, lalu siapkan repo GitHub + Pages.
   - Repo baru, mis. `ZAKAT_DASHBOARD_BBK02`, dengan pola sama seperti repo sensus.
-- [ ] 23. 👤 Konfigurasi 1448 H / 2027 (data asli dari pengurus):
+  - _Catatan 2026-11-22: memakai repo `ZAKAT_BBK02` yang sama. Pages menyajikan dari `main` (root), dan root `index.html` mengalihkan ke `web/` (D-22)._
+- [~] 23. 👤 Konfigurasi 1448 H / 2027 (data asli dari pengurus):
   - tanggal Idul Fitri, batas fitrah, tutup rekap mal, harga/soq, tarif fidyah;
   - amil 2027 + PIN (amil hasil impor belum punya PIN);
   - pengguna Pengurus.
-- [ ] 24. Verifikasi Tren menampilkan angka 2024–2026 sesuai tabel `domain-zakat.md`. Bila beda, catat di laporan.
+  - _Catatan 2026-11-22: config 2027 dan 1 Admin + 1 Pengurus sudah ada. Yang masih kurang: amil baru 1 (UAT butuh ≥2), tanggal Idul Fitri masih perkiraan, dan tarif fidyah 2024–2026 = 15.000 perlu dikonfirmasi._
+- [~] 24. Verifikasi Tren menampilkan angka 2024–2026 sesuai tabel `domain-zakat.md`. Bila beda, catat di laporan.
+  - _Catatan 2026-11-22: dilaporkan cocok, tapi angka per tahun belum dicatat. Isi tabel di `docs/panduan/verifikasi-tren.md`._
 
 ## Fase 3 — UAT (uji penerimaan) dengan data asli
+Rencana & prasyarat: `docs/panduan/uat-fase-3.md`.
 - [ ] 25. 👤 UAT amil di HP (minimal 2 amil, Android berbeda):
   - login PIN → nama benar;
   - cari KK → simpan Titip uang dengan lebih bayar;

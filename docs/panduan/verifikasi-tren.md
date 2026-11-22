@@ -2,7 +2,7 @@
 
 **Task:** Verifikasi bahwa Tren menampilkan angka 2024–2026 sesuai tabel di `domain-zakat.md`. Jika ada perbedaan, catat di laporan.
 
-**Status:** ⏳ Menunggu pemilik lakukan Task 19–23 (impor data 2024–2026 dan setup config tahun 2027)
+**Status:** Siap dijalankan. Impor sudah selesai, tapi hasil review (task 20) sebaiknya diterapkan dulu.
 
 **Referensi:** 
 - Tabel tren yang seharusnya: `.kiro/steering/domain-zakat.md` (tabel paling bawah, "Data historis (impor)")
@@ -122,12 +122,12 @@ Jika ingin verifikasi pembagian lebih detail, cek di halaman Dashboard:
 
 ## Jika Ada Perbedaan
 
-Jika nilai tidak cocok dengan tabel, catat di laporan **`docs/handoff/YYYY-MM-DD-task-24-tren-verification.md`** dengan format:
+Jika nilai tidak cocok dengan tabel, catat di laporan **`docs/handoff/YYYY-MM-DD-laporan-verifikasi-tren.md`** dengan format:
 
 ```markdown
 # Task 24 — Tren Verification Report
 
-**Tanggal:** 2024-MM-DD  
+**Tanggal:** YYYY-MM-DD  
 **Verifier:** [nama]
 
 ## Hasil Verifikasi
@@ -140,8 +140,8 @@ Jika nilai tidak cocok dengan tabel, catat di laporan **`docs/handoff/YYYY-MM-DD
 1. **Tahun 2026 — Kolom Mal+Tijaroh:**
    - Expected: Rp 266.620.000
    - Actual: Rp 266.620.001
-   - Gap: Rp 1 (pembulatan)
-   - Action: **Acceptable** (perbedaan 1 rupiah karena pembulatan)
+   - Gap: Rp 1
+   - Action: **LAPORKAN ke konsultan.** Total mal adalah penjumlahan biasa tanpa pembulatan, jadi angkanya harus persis sama. Selisih sekecil apa pun berarti ada setoran yang terlewat atau ganda.
 
 2. **Tahun 2024 — Kolom Muzakki JM:**
    - Expected: 294
@@ -153,8 +153,8 @@ Jika nilai tidak cocok dengan tabel, catat di laporan **`docs/handoff/YYYY-MM-DD
 
 ## Konklusi
 - Tren 2025–2026 ✓ Cocok
-- Tren 2024 ⚠️ Perlu cek detail JM
-- **Status:** Ready untuk UAT Fase 3
+- Tren 2024 ⚠️ Perlu cek detail JM → handoff ke konsultan (skill `consultant-handoff`)
+- **Status:** UAT boleh jalan paralel. Perbedaan angka historis tidak menghalangi input 2027.
 ```
 
 ---

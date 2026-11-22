@@ -29,5 +29,12 @@ dist/
 build/
 
 # Credentials & sensitive files (DO NOT COMMIT)
-# .clasp.json — keep in repo for scriptId tracking, but remove from local if has credentials
-# config.js — commit placeholder only, update with real Web App URL at deployment time
+# web/config.js — SATU-SATUNYA tempat URL /exec produksi (diizinkan privacy-scan); jangan tulis URL di file lain
+
+# Kiro: riwayat eksekusi task per sesi (lokal)
+.kiro/specs/*/tasks.meta.json
+
+# clasp: scriptId lokal (lihat release-runbook — jangan di-commit)
+.clasp.json
+# File hasil generate (jalankan node scripts/gen-copy-paste-guide.js bila perlu)
+docs/panduan/copy-paste-files.txt

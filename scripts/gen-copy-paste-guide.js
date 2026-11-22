@@ -9,20 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const appsScriptDir = path.join(__dirname, '..', 'apps-script');
-const gsFiles = [
-  '00_Config.gs',
-  'Util.gs',
-  'Sensus.gs',
-  'Auth.gs',
-  'Api.gs',
-  'Setup.gs',
-  'Master.gs',
-  'Fitrah.gs',
-  'Dashboard.gs',
-  'Import.gs',
-  'ImportParse.gs',
-  'Matcher.gs',
-];
+const gsFiles = fs.readdirSync(appsScriptDir).filter(f => f.endsWith('.gs')).sort();
 
 console.log('📋 PANDUAN COPY-PASTE GOOGLE APPS SCRIPT\n');
 console.log('Urutan file (WAJIB diikuti):\n');
@@ -55,7 +42,7 @@ console.log('   - Ganti isinya dengan isi apps-script/appsscript.json\n');
 console.log('5. Simpan dan refresh halaman spreadsheet\n');
 
 // Juga generate file teks yang berisi link ke setiap file
-const outputFile = path.join(__dirname, '..', 'COPY-PASTE-FILES.txt');
+const outputFile = path.join(__dirname, '..', 'docs', 'panduan', 'copy-paste-files.txt');
 let output = 'FILE UNTUK DICOPY-PASTE KE GOOGLE APPS SCRIPT\n';
 output += '==========================================\n\n';
 
@@ -66,4 +53,4 @@ gsFiles.forEach((file, idx) => {
 });
 
 fs.writeFileSync(outputFile, output);
-console.log(`✅ Panduan juga disimpan di: COPY-PASTE-FILES.txt`);
+console.log(`✅ Panduan juga disimpan di: docs/panduan/copy-paste-files.txt`);

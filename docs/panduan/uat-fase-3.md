@@ -1,7 +1,8 @@
 # Fase 3: UAT — Rencana Pengujian
 
-**Status:** Siap UAT
-**Tanggal:** 2027-01-xx (akan dikonfirmasi)
+**Status:** Belum dimulai. Lihat prasyarat di bawah.
+**Tanggal:** ditentukan pemilik (sebaiknya jauh sebelum Ramadhan 1448 H, ±Februari 2027)
+**Task:** 25–29 di `.kiro/specs/zakat-mvp/tasks.md`
 **Peserta:** Admin, Pengurus, Amil, Pemilik Spreadsheet
 
 ---
@@ -12,7 +13,9 @@
 - [x] Web dashboard accessible
 - [x] Data 2024–2026 import & verified
 - [x] Config 2027 setup (dates, harga, tarif)
-- [x] Amil 2027 setup (1 amil + PIN)
+- [ ] Amil 2027 minimal **2 amil + PIN** (saat ini baru 1), untuk diuji di 2 HP Android berbeda
+- [ ] Review impor diterapkan (task 20)
+- [ ] Tanggal Idul Fitri 2027 & tarif fidyah dikonfirmasi pengurus
 - [x] Pengguna (Admin + Pengurus) setup
 - [x] All tests passing (privacy, syntax, unit, e2e)
 - [ ] Manual smoke test (login, input, dashboard)
@@ -62,11 +65,12 @@
 - Verify **fidyah tidak ikut pembagian** fitrah
 
 ### 6. Batas Waktu (2027)
-- **Set ulang tanggal sistem** ke hari sebelum batas fitrah:
-  - Amil bisa input fitrah
-- **Set ke hari setelah batas fitrah:**
-  - Amil form fitrah terkunci
-  - Admin bisa input susulan (tanggal setor ≤ tanggal batas)
+Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfigurasi**:
+- **Sebelum diubah** (batas masih di masa depan): amil bisa input fitrah.
+- **Ubah `Batas_Fitrah` ke waktu lampau** (mis. kemarin 06:00):
+  - Form fitrah amil terkunci, dan penyimpanan ditolak backend.
+  - Admin bisa input susulan administrasi **hanya** jika tanggal setor ≤ tanggal batas. Tanggal setor sesudah batas harus ditolak.
+- **Kembalikan** `Batas_Fitrah` ke 2027-03-10 06:00, lalu hapus setoran uji.
 
 ### 7. Tren & Export
 - Buka Dashboard › Tren
@@ -123,3 +127,10 @@
 
 **Catatan:**
 
+
+---
+
+## Setelah UAT
+- Catat setiap temuan dengan format: skenario, langkah, hasil yang diharapkan, hasil nyata, HP/browser, dan peran. **Jangan** melampirkan screenshot yang berisi data jamaah asli.
+- Tulis hasilnya di `docs/handoff/YYYY-MM-DD-laporan-uat.md` memakai `_TEMPLATE-laporan.md` (task 28).
+- Bug yang tidak mengubah aturan atau UX boleh langsung diperbaiki (task 29). Temuan yang mengubah aturan atau UX dibuat jadi handoff ke konsultan.

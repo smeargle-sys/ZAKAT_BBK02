@@ -21,7 +21,9 @@ Panduan lengkap ada di steering manual `#release-runbook`. Ringkasan langkah:
 3. Jika ada kolom baru: jalankan fungsi `setupZakat` dari editor atau menu Zakat.
 
 ## Frontend (GitHub Pages)
-1. Pastikan `web/config.js` berisi URL `/exec` produksi.
+1. Pastikan `web/config.js` berisi URL `/exec` produksi. Ini **satu-satunya** file yang boleh memuat URL tersebut (`privacy-scan` mengizinkannya). Jangan menggantinya dengan placeholder.
+   - Pages menyajikan `main` root, dan `index.html` di root mengalihkan ke `web/` (D-22).
+   - Jangan menyalin file web ke root atau ke branch `gh-pages`.
 2. Tambahkan versi cache-busting di `web/index.html` (`app.js?v=YYYYMMDD`, dst.) bila mengubah JS/CSS.
 3. Commit & push. Tunggu Pages selesai (±1–2 menit), lalu buka situs dan login dengan akun uji.
 

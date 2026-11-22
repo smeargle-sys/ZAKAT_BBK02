@@ -7,6 +7,8 @@ apps-script/   → kode backend (tempel ke Apps Script yang menempel di spreadsh
 web/           → halaman web (GitHub Pages), isi config.js dengan URL Web App
 tests/         → test Node tanpa dependency (simulasi Apps Script + data sensus sintetis)
 docs/          → keputusan (decisions), backlog, mockup, handoff ke konsultan
+docs/panduan/  → panduan langkah demi langkah untuk pemilik (setup, go-live, verifikasi tren, UAT)
+index.html     → hanya mengalihkan ke web/ (GitHub Pages menyajikan root branch main)
 .kiro/         → steering, skills, specs, hooks untuk Kiro
 ```
 
@@ -81,7 +83,7 @@ Data yang dihapus tidak benar-benar dibuang, tetapi diberi tanda `Dihapus = Y`.
      - isi `Jadikan_SM` = `Y` untuk simpatisan.
    - Setelah itu jalankan **Zakat › Terapkan hasil review impor**.
 6. **Deploy › New deployment › Web app**: *Execute as* = Me, *Who has access* = Anyone. Salin URL `/exec`.
-7. Isi URL tersebut ke `web/config.js`, lalu upload folder `web/` ke repo GitHub dan aktifkan GitHub Pages, sama seperti sensus.
+7. Isi URL tersebut ke `web/config.js`, lalu push ke GitHub dan aktifkan GitHub Pages dengan **branch `main`, folder root**. `index.html` di root otomatis mengalihkan ke `web/`.
 8. Buka halaman web dan login dengan PIN Admin. Di **Konfigurasi**:
    - Cek tahun 1448 H / 2027: tanggal Idul Fitri, batas fitrah, harga titip, dan tarif fidyah. Tanggal 2027 masih perkiraan.
    - Tambahkan **amil 2027** beserta **PIN masing-masing**. Amil hasil impor 2026 belum punya PIN, jadi isi lewat tombol *Ubah*.

@@ -9,7 +9,7 @@ inclusion: manual
 2. **Apps Script:** buka Ekstensi › Apps Script.
    - Project Settings › centang *Show "appsscript.json"*, lalu tempel `apps-script/appsscript.json`.
    - Buat file `.gs` sesuai `apps-script/`, lalu tempel isinya (nama file tidak harus sama, tapi disarankan sama).
-   - Opsional: `clasp clone`/`clasp push` (`.clasp.json` jangan di-commit).
+   - Opsional: `clasp clone`/`clasp push` (`.clasp.json` sudah di-`.gitignore`, jadi jangan di-commit).
 3. **Setup:** jalankan `setupZakat` sekali dan izinkan akses Sheets & Drive. Muat ulang spreadsheet sampai menu **Zakat** muncul.
 4. **Akun Admin:** Zakat › Buat akun Admin (nama + PIN 6 digit).
 5. **Impor:** Zakat › Impor data lama 2024–2026.
@@ -17,7 +17,9 @@ inclusion: manual
    - Periksa `Impor_Review`: isi `Pilih_ID_Keluarga` (salin dari tab Keluarga di sensus) atau `Jadikan_SM = Y`.
    - Jalankan Zakat › Terapkan hasil review impor.
 6. **Deploy backend:** Deploy › New deployment › Web app. *Execute as*: Me, *Who has access*: Anyone. Salin URL `/exec`.
-7. **Deploy frontend:** isi URL di `web/config.js`, push ke GitHub, lalu aktifkan GitHub Pages (branch `main`, folder `/web` atau root sesuai repo).
+7. **Deploy frontend:** isi URL di `web/config.js`, push ke GitHub, lalu aktifkan GitHub Pages dengan **branch `main`, folder `/` (root)**. Root `index.html` hanya mengalihkan ke `web/` (D-22).
+   - **Jangan** menyalin file web ke root atau ke branch lain. `web/` adalah satu-satunya sumber.
+   - URL produksi hanya boleh ada di `web/config.js`.
 8. **Konfigurasi:** login Admin di web. Di Konfigurasi:
    - Cek 1448 H / 2027: tanggal Idul Fitri, batas fitrah, tutup rekap mal, harga/soq, dan tarif fidyah.
    - Isi amil 2027 + PIN masing-masing.
@@ -30,7 +32,7 @@ inclusion: manual
    - Perbarui file `.gs` di editor (atau `clasp push`).
    - Buka Deploy › Manage deployments › ✏️ › Version: **New version** › Deploy. URL tidak berubah.
    - Jika ada kolom baru, jalankan `setupZakat` sekali.
-3. **Frontend:** push `web/`. GitHub Pages butuh 1–2 menit. Minta pengguna refresh. Jika perlu, tambahkan query versi pada `<script src="app.js?v=YYYYMMDD">` untuk mematahkan cache.
+3. **Frontend:** push `main` (perubahan di `web/`). GitHub Pages butuh 1–2 menit. Minta pengguna refresh. Jika perlu, tambahkan query versi pada `<script src="app.js?v=YYYYMMDD">` untuk mematahkan cache.
 4. Tulis laporan rilis di `docs/handoff/YYYY-MM-DD-laporan.md`.
 
 ## Rollback

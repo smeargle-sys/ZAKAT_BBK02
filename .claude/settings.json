@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "npm test --silent >/dev/null 2>&1 || (echo 'npm test GAGAL — jalankan npm test untuk detail' >&2; exit 2)", "timeout": 180 }
+        ]
+      }
+    ]
+  }
+}
