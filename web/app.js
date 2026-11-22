@@ -37,7 +37,7 @@
   var app = $('#app');
 
   // Aksi yang hanya membaca. Aksi lain yang berhasil dianggap mengubah data → cache memori dikosongkan.
-  var BACA = { ping: 1, login: 1, logout: 1, bootstrap: 1, kkList: 1, cariMuzakki: 1, getFitrah: 1, daftarSimpatisan: 1, dashboard: 1, tren: 1, daftarSetoran: 1, getConfig: 1, daftarPengguna: 1 };
+  var BACA = { ping: 1, login: 1, logout: 1, bootstrap: 1, kkList: 1, cariMuzakki: 1, getFitrah: 1, cekLain: 1, getLain: 1, cekKonsistensi: 1, daftarSimpatisan: 1, dashboard: 1, tren: 1, daftarSetoran: 1, getConfig: 1, daftarPengguna: 1 };
   function api(action, params) {
     var body = Object.assign({ action: action, token: S.token }, params || {});
     return fetch(window.ZAKAT_CONFIG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })

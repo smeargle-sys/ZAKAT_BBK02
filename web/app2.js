@@ -331,7 +331,7 @@
       (S.role === 'admin' ? '<label class="f">Amil yang menerima<select id="mAmil" class="fi"><option value="">— tanpa amil / langsung admin —</option>' + b.amil.filter(function (a) { return a.aktif; }).map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === M.idAmil ? ' selected' : '') + '>' + esc(a.nama) + '</option>'; }).join('') + '</select></label>' : '') +
       '<section class="card pad" style="gap:12px">' +
       '<label class="f">Muzakki (jamaah sensus atau simpatisan)<span class="search">' + ICON.search + '<input id="mQ" type="search" placeholder="Ketik minimal 2 huruf…" value="' + esc(M.q) + '"><button type="button" class="clr" data-act="hapusCari" aria-label="Hapus pencarian">' + ICON.x + '</button></span></label>' +
-      '<div class="results" id="mRes" role="listbox" aria-label="Hasil pencarian"></div><div id="mPilih"></div>' +
+      '<div class="results" id="mRes" role="listbox" aria-label="Hasil pencarian"></div><div id="mPilih"></div><div id="mGanda" aria-live="polite"></div>' +
       '<label class="f">Atau tulis nama (muzakki di luar data)<input id="mNama" class="fi" value="' + esc(M.namaBebas) + '" placeholder="Opsional"></label>' +
       (fid ? '<label class="f">Jumlah hari fidyah<input id="mHari" class="fi" inputmode="numeric" value="' + esc(M.hari) + '"><span class="sub" style="font-weight:400">Tarif ' + esc(c.Hijriah) + ': ' + (c.Tarif_Fidyah ? rp(c.Tarif_Fidyah) + ' per hari' : 'belum diatur di Konfigurasi') + '</span></label>' : '') +
       '<label class="f">' + (fid ? 'Nominal fidyah' : 'Jumlah zakat') + '<span style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;color:var(--muted)">Rp</span><input id="mNom" data-rp class="fi big" style="border-color:' + (fid ? 'var(--brand)' : 'var(--blue)') + '" inputmode="numeric" value="' + (M.nominal ? nf(M.nominal) : '') + '"></span></label>' +
@@ -342,8 +342,8 @@
       '<button type="submit" class="btn ' + color + ' block" id="mSave">' + (M.id ? 'Simpan perubahan' : 'Simpan') + '</button></form>';
     var on = function (id, ev, fn) { var el = $('#' + id); if (el) el.addEventListener(ev, fn); };
     var tm;
-    on('mQ', 'input', function (e) { M.q = e.target.value; clearTimeout(tm); if (!M.q) { M.pilih = null; M.hasil = []; drawRes(); return; } tm = setTimeout(cariM, 300); });
-    on('mNama', 'input', function (e) { M.namaBebas = e.target.value; if (M.namaBebas) { M.pilih = null; M.hasil = []; drawRes(); } });
+    on('mQ', 'input', function (e) { M.q = e.target.value; clearTimeout(tm); if (!M.q) { M.pilih = null; M.hasil = []; drawRes(); cekGanda(); return; } tm = setTimeout(cariM, 300); });
+    on('mNama', 'input', function (e) { M.namaBebas = e.target.value; if (M.namaBebas) { M.pilih = null; M.hasil = []; drawRes(); } clearTimeout(gandaTm); gandaTm = setTimeout(cekGanda, 500); });
     on('mHari', 'input', function (e) { M.hari = e.target.value; var t = Number(c.Tarif_Fidyah) || 0; if (t) { M.nominal = Z.parseNum(M.hari) * t; $('#mNom').value = nf(M.nominal); } });
     on('mNom', 'input', function (e) { M.nominal = Z.parseNum(e.target.value); prevM(); });
     on('mTgl', 'change', function (e) { M.tanggal = e.target.value; lampM(); });
@@ -351,7 +351,33 @@
     on('mCat', 'input', function (e) { M.catatan = e.target.value; });
     on('mAmil', 'change', function (e) { M.idAmil = e.target.value; });
     $('#mForm').addEventListener('submit', function (e) { e.preventDefault(); saveM(); });
-    drawRes(); prevM(); lampM();
+    drawRes(); prevM(); lampM(); drawGanda();
+    if (M.sudahAda === undefined) cekGanda();
+  }
+  /**
+   * D-47: tampilkan setoran zakat lain orang ini di tahun yang sama, supaya dua petugas tidak mencatat ganda.
+   * Jenis sama = peringatan merah; jenis lain = informasi. Pemeriksaan pasti tetap di server saat simpan.
+   */
+  var gandaTm, gandaKunci = '';
+  var JL = { MAL: 'Zakat Mal', TIJAROH: 'Tijaroh', MAL_TIJAROH: 'Mal + Tijaroh', FIDYAH: 'Fidyah' };
+  function cekGanda() {
+    var nama = M.pilih ? M.pilih.nama : (M.namaBebas || '').trim(), refId = M.pilih ? M.pilih.id : '';
+    var kunci = refId + '|' + nama.toLowerCase(); gandaKunci = kunci;
+    if (!nama) { M.sudahAda = []; drawGanda(); return; }
+    api('cekLain', { tahun: M.tahun, refId: refId, nama: nama, id: M.id || undefined }).then(function (list) {
+      if (kunci !== gandaKunci) return; // sudah ganti orang
+      M.sudahAda = list; drawGanda();
+    }).catch(function () { /* info saja; pemeriksaan pasti di server */ });
+  }
+  function drawGanda() {
+    var el = $('#mGanda'); if (!el) return;
+    var list = M.sudahAda || [];
+    if (!list.length) { el.innerHTML = ''; return; }
+    var nama = M.pilih ? M.pilih.nama : M.namaBebas;
+    var sama = list.filter(function (x) { return x.jenis === M.jenis; }), lain = list.filter(function (x) { return x.jenis !== M.jenis; });
+    var baris = function (x) { return '<li>' + esc(JL[x.jenis] || x.jenis) + ' <b>' + rp(x.nominal) + '</b> · ' + esc(Z.tglId(x.tanggal)) + (x.amil ? ' · amil ' + esc(x.amil) : '') + (x.dicatat && x.dicatat !== x.amil ? ' · dicatat ' + esc(x.dicatat) : '') + '</li>'; };
+    el.innerHTML = (sama.length ? '<div class="note red">' + ICON.info + '<span><b>Kemungkinan input ganda.</b> ' + esc(nama) + ' sudah tercatat ' + esc(JL[M.jenis]) + ' tahun ini:<ul style="margin:4px 0 0;padding-left:18px">' + sama.map(baris).join('') + '</ul>Simpan hanya bila ini setoran tambahan.</span></div>' : '') +
+      (lain.length ? '<div class="note warn" style="margin-top:8px">' + ICON.info + '<span>Info: ' + esc(nama) + ' juga tercatat tahun ini:<ul style="margin:4px 0 0;padding-left:18px">' + lain.map(baris).join('') + '</ul></span></div>' : '');
   }
   function lampM() {
     var lp = lampiranAuto(), el = $('#mLamp'); if (!el) return;
@@ -389,7 +415,7 @@
     var n = $('#mNama'); if (n) n.value = '';
     // tutup daftar setelah memilih; muncul lagi bila nama diketik ulang
     M.hasil = []; M.q = M.pilih.nama; var qi = $('#mQ'); if (qi) qi.value = M.pilih.nama;
-    drawRes();
+    drawRes(); cekGanda();
   };
   ACT.mJenis = function (el) { M.jenis = el.getAttribute('data-j'); renderM(); };
   function prevM() {
@@ -400,15 +426,21 @@
       return '<div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0;border-top:1px solid var(--line2)"><span style="color:var(--ink2)">' + esc(p[0]) + ' ' + nf(p[1]) + '%</span><b class="num">' + rp(n * p[1] / 100) + '</b></div>';
     }).join('');
   }
-  function saveM() {
+  function saveM(ganda) {
     var nama = M.pilih ? M.pilih.nama : (M.namaBebas || '').trim();
     if (!nama) { Z.toast('Pilih muzakki atau tulis namanya.', true); return; }
     if (!(M.nominal > 0)) { Z.toast('Isi nominal.', true); return; }
     var form = $('#mForm'), btn = $('#mSave');
     Z.sibuk(form, true); btn.innerHTML = '<span class="spin"></span>Menyimpan…';
     api('simpanLain', { id: M.id || undefined, tahun: M.tahun, jenis: M.jenis, nama: nama, refTipe: M.pilih ? M.pilih.tipe : 'LAIN', refId: M.pilih ? M.pilih.id : '', idKeluarga: M.pilih ? M.pilih.idKeluarga : '',
-      nominal: M.nominal, hari: Z.parseNum(M.hari), caraBayar: M.cara, tanggal: M.tanggal, catatan: M.catatan, idAmil: M.idAmil, lampiran: M.lampiran || undefined })
+      nominal: M.nominal, hari: Z.parseNum(M.hari), caraBayar: M.cara, tanggal: M.tanggal, catatan: M.catatan, idAmil: M.idAmil, lampiran: M.lampiran || undefined, ganda: ganda || undefined })
       .then(function (r) { Z.toast((M.id ? 'Perubahan tersimpan' : 'Tersimpan') + (r.lampiran === 'SUSULAN' ? ' sebagai susulan' : '') + ': ' + nama + ' ' + rp(r.nominal) + '.'); Z.go(S.role === 'admin' ? '#/setoran?tahun=' + M.tahun : '#/amil'); })
-      .catch(function (e) { Z.sibuk(form, false); btn.textContent = M.id ? 'Simpan perubahan' : 'Simpan'; Z.fail(e); });
+      .catch(function (e) {
+        Z.sibuk(form, false); btn.textContent = M.id ? 'Simpan perubahan' : 'Simpan';
+        var msg = String(e && e.message || e);
+        // D-47: server menemukan setoran jenis sama (termasuk yang baru disimpan petugas lain) → minta konfirmasi
+        if (msg.indexOf('GANDA:') === 0) { if (confirm(msg.slice(6))) saveM(true); else cekGanda(); return; }
+        Z.fail(e);
+      });
   }
 })();

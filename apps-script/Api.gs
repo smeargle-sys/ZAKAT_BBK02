@@ -29,6 +29,7 @@ function routes_() { return {
   getFitrah:         { roles: ['admin', 'amil'], fn: getFitrah_ },
   getLain:           { roles: ['admin'], fn: getLain_ },
   simpanLain:        { roles: ['admin', 'amil'], fn: simpanLain_ },
+  cekLain:           { roles: ['admin', 'amil'], fn: cekLain_ },
   hapusLain:         { roles: ['admin'], fn: hapusLain_ },
   daftarSimpatisan:  { roles: ['admin', 'amil'], fn: daftarSimpatisan_ },
   simpanSimpatisan:  { roles: ['admin', 'amil'], fn: simpanSimpatisan_ },

@@ -219,6 +219,16 @@ Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfiguras
   - Ikuti saran, lalu *Periksa ulang*.
 - **Akses:** login pengurus/amil → membuka `#/konsistensi` dialihkan ke Pemantauan.
 
+### 20. Cegah input ganda zakat mal/tijaroh/fidyah (v1.8.1)
+- **Amil A:** catat Zakat Mal untuk satu jamaah (pilih dari sensus).
+- **Amil B (HP lain):** buka Mal / Tijaroh, lalu pilih jamaah yang sama. Muncul catatan merah **"Kemungkinan input ganda"** berisi nominal, tanggal, dan amil A.
+- **Tekan Simpan:** muncul konfirmasi.
+  - *Batal* → tidak tersimpan.
+  - *OK* → tersimpan sebagai setoran tambahan.
+- **Nama diketik manual** (tanpa memilih dari sensus) tetap tertangkap.
+- **Jenis berbeda** (mis. sudah Mal, sekarang Tijaroh): hanya catatan info, tidak ada konfirmasi.
+- **Fidyah:** perilaku sama.
+
 ## Sign-Off
 
 | Role | Nama | Tanda Tangan | Tanggal |

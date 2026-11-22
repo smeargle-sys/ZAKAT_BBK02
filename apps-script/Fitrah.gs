@@ -191,12 +191,44 @@ function simpanLain_(p, s) {
       obj.Diubah_Oleh = s.nama || s.role; obj.Diubah_Waktu = nowIso_();
       updateObject_(t, row, obj); obj.ID = row.ID;
     } else {
+      // D-47: cegah input ganda (mis. dua petugas mencatat setoran yang sama). Diperiksa di dalam lock,
+      // jadi penyimpanan bersamaan tetap tertangkap. Setoran tambahan yang sah: kirim ulang dengan p.ganda = true.
+      if (!p.ganda) {
+        var sama = lainSama_(tahun, p.refId, p.nama, '').filter(function (r) { return r.Jenis === jenis; });
+        if (sama.length) throw new Error('GANDA:' + p.nama + ' sudah tercatat ' + LABEL_LAIN[jenis] + ' tahun ini: ' + sama.map(function (r) {
+          return rp_(num_(r.Nominal)) + ' (' + toDateStr_(r.Tanggal) + (r.Nama_Amil ? ', amil ' + r.Nama_Amil : '') + (r.Dicatat_Oleh ? ', dicatat ' + r.Dicatat_Oleh : '') + ')';
+        }).join('; ') + '. Simpan sebagai setoran tambahan?');
+      }
       obj.ID = newId_(jenis === 'FIDYAH' ? 'FD' : 'ML'); obj.Waktu_Input = nowIso_(); obj.Dicatat_Oleh = s.nama || s.role;
       appendObjects_('Zakat_Lain', [obj]);
     }
     log_(s, 'simpanLain', { id: obj.ID, jenis: jenis, nominal: nominal, lampiran: lampiran, amil: amil ? amil.nama : '' });
     return { id: obj.ID, lampiran: lampiran, nominal: nominal };
   });
+}
+
+/**
+ * D-47: setoran zakat lain (mal/tijaroh/campuran/fidyah) milik orang yang sama di tahun yang sama.
+ * Orang dianggap sama bila Ref_ID (jamaah/simpatisan) sama ATAU nama (dinormalkan) sama, supaya
+ * pilihan dari sensus dan nama yang diketik manual tetap tertangkap.
+ */
+function lainSama_(tahun, refId, nama, kecualiId) {
+  var ref = String(refId || ''), nm = normName_(nama || '').join(' ');
+  return zakatLain_(tahun).filter(function (r) {
+    if (kecualiId && String(r.ID) === String(kecualiId)) return false;
+    return (ref && String(r.Ref_ID) === ref) || (nm && normName_(r.Nama || '').join(' ') === nm);
+  });
+}
+var LABEL_LAIN = { MAL: 'Zakat Mal', TIJAROH: 'Tijaroh', MAL_TIJAROH: 'Mal + Tijaroh', FIDYAH: 'Fidyah' };
+function ringkasLain_(r) {
+  return { id: String(r.ID), jenis: String(r.Jenis), nominal: num_(r.Nominal), tanggal: toDateStr_(r.Tanggal), lampiran: String(r.Lampiran || ''),
+    amil: String(r.Nama_Amil || ''), dicatat: String(r.Dicatat_Oleh || ''), sumber: String(r.Sumber || '') };
+}
+/** Info untuk form: setoran zakat lain orang ini tahun ini (tanpa mengubah apa pun). */
+function cekLain_(p) {
+  var tahun = Number(p.tahun || tahunAktif_().Tahun);
+  if (!p.refId && !String(p.nama || '').trim()) return [];
+  return lainSama_(tahun, p.refId, p.nama, p.id).map(ringkasLain_);
 }
 
 function hapusLain_(p, s) {
@@ -240,3 +272,6 @@ function daftarSetoran_(p) {
   if (p.kelas) all = all.filter(function (x) { return x.kelas === p.kelas; });
   return all.sort(function (a, b) { return a.waktu < b.waktu ? 1 : -1; });
 }
+
+/** Format rupiah untuk pesan: 1250000 → Rp 1.250.000 */
+function rp_(n) { return 'Rp ' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
