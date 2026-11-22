@@ -136,7 +136,8 @@ function ringkasTahun_(tahun, detail) {
 
   // belum setor & kurang bayar (hanya bermakna untuk data dari aplikasi)
   if (aktif) {
-    var kk = kkList_({ tahun: tahun }, {}).list;
+    var kk = kkList_({ tahun: tahun }, {}).list
+      .filter(function (k) { return !k.tanpaKK; }); // hanya KK asli (punya ID Keluarga), exclude TANPA-KK virtual
     out.belum = kk.filter(function (k) { return k.status !== 'SUDAH'; }).map(function (k) {
       var bel = k.anggota.filter(function (a) { return !a.sudah; });
       return { id: k.id, nama: k.nama, jiwa: k.jiwa, belum: bel.length, anggota: bel.length === k.anggota.length ? 'Semua anggota' : bel.map(function (a) { return a.nama + (a.keberadaan !== 'Menetap' ? ' (' + a.keberadaan + ')' : ''); }).join(', '),
