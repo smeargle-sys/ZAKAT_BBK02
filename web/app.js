@@ -218,6 +218,7 @@
       // D-35/D-36: amil tidak punya akses (backend juga menolak)
       case 'mustahiq': if (S.role === 'amil') return go('#/dash'); return window.__Z.viewMustahiq(q.tahun);
       case 'laporan': if (S.role === 'amil') return go('#/dash'); return window.__Z.viewLaporan(q);
+      case 'konsistensi': if (S.role !== 'admin') return go('#/dash'); return window.__Z.viewKonsistensi(q);
       default: go('#/dash');
     }
   }

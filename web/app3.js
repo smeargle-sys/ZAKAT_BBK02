@@ -456,6 +456,7 @@
     var tutup = String(c.Status).toUpperCase() !== 'BUKA'; // D-44: tahun ditutup = hanya-baca
     Z.app.innerHTML = '<div class="wrap"><div class="head"><div class="t"><h1>Konfigurasi</h1><p>Pengaturan per tahun. Data KK &amp; jamaah selalu dibaca langsung dari SENSUS BBK02.</p></div>' +
       '<label class="f" style="font-size:12px;color:var(--muted)">Tahun<select id="cTahun" class="fi" style="height:44px;font-weight:600">' + CF.configs.slice().reverse().map(function (x) { return '<option value="' + x.Tahun + '"' + (x.Tahun === c.Tahun ? ' selected' : '') + '>' + esc(x.Hijriah) + ' / ' + x.Tahun + ' · ' + x.Status + '</option>'; }).join('') + '</select></label>' +
+      '<a class="btn" href="#/konsistensi?tahun=' + c.Tahun + '">Cek konsistensi sensus</a>' +
       '<button type="button" class="btn" data-act="cTahunBaru">+ Tahun baru (salin dari tahun terakhir)</button></div>' +
       '<section class="card pad"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px"><h2 style="flex:1">Tahun &amp; harga · ' + esc(c.Hijriah) + '</h2>' +
       (tutup ? '<span class="chip">Penerimaan ditutup</span><button type="button" class="btn sm" data-act="cBuka">Buka kembali penerimaan</button></div>' +

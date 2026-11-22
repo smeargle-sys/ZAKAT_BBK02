@@ -489,4 +489,45 @@
   function catatanSelisih(d) {
     return d.adaFinal && d.selisih ? '<p class="ket" style="color:#B42318;font-weight:700">Catatan: total hasil musyawarah ' + nf(d.totalSoq) + ' soq, bagian mustahiq ' + nf(d.pool) + ' soq (' + (d.selisih > 0 ? 'lebih ' : 'kurang ') + nf(Math.abs(d.selisih)) + ' soq).</p>' : '';
   }
+
+  // =====================================================================
+  // CEK KONSISTENSI SENSUS (D-46, admin) — hanya membaca, tidak mengubah data
+  // =====================================================================
+  var KS = null;
+  var KAT = [['setoran', 'Setoran zakat fitrah'], ['simpatisan', 'Simpatisan'], ['mustahiq', 'Mustahiq'], ['amil', 'Amil']];
+  Z.viewKonsistensi = function (q) {
+    Z.loading('Memeriksa data terhadap sensus terbaru…');
+    Z.ensureBoot().then(function () {
+      var t = Number(q.tahun || S.tahun || S.boot.tahunAktif);
+      return api('cekKonsistensi', { tahun: t });
+    }).then(Z.jaga(function (d) { KS = d; renderKonsistensi(); })).catch(Z.fail);
+  };
+  function renderKonsistensi() {
+    var d = KS;
+    var html = '<div class="wrap"><div class="head"><div class="t"><h1>Cek konsistensi sensus</h1>' +
+      '<p>Data ' + esc(d.hijriah) + ' / ' + d.tahun + ' dibandingkan dengan sensus terbaru (dibaca ' + esc(Z.tglId(d.waktuSensus)) + '). Hanya memeriksa, tidak mengubah data.</p></div>' +
+      tahunSelect('ksTahun', d.tahun) + '<button type="button" class="btn pri" data-act="ksUlang">Periksa ulang</button></div>';
+    if (!d.jumlah) {
+      html += '<div class="note ok">' + ICON.check + '<span><b>Semua data cocok dengan sensus.</b> Tidak ada setoran, simpatisan, mustahiq, atau amil yang perlu disesuaikan.</span></div>';
+    } else {
+      html += '<section class="grid kpis" aria-label="Ringkasan">' +
+        kpi('Perlu tindakan', String(d.perlu), 'data yang sebaiknya disesuaikan') +
+        kpi('Info', String(d.jumlah - d.perlu), 'perubahan yang sudah ditangani otomatis') +
+        KAT.filter(function (k) { return d.ringkas[k[0]]; }).map(function (k) { return kpi(k[1], String(d.ringkas[k[0]]), 'temuan'); }).join('') + '</section>' +
+        '<div class="note warn">' + ICON.info + '<span>Temuan muncul karena data sensus berubah setelah data zakat dicatat (mis. anggota pindah KK, jamaah dihapus, ID Keluarga dilengkapi). Ikuti saran pada tiap baris, lalu tekan <b>Periksa ulang</b>.</span></div>';
+      KAT.forEach(function (k) {
+        var rows = d.temuan.filter(function (t) { return t.kategori === k[0]; });
+        if (!rows.length) return;
+        html += card(k[1], rows.length + ' temuan', '<div class="tbl"><table><thead><tr><th>Temuan</th><th>Data</th><th>Saran</th><th></th></tr></thead><tbody>' +
+          rows.map(function (t) {
+            return '<tr><td style="white-space:nowrap"><span class="chip ' + (t.tingkat === 'perlu' ? 'red' : 'blue') + '">' + (t.tingkat === 'perlu' ? 'Perlu tindakan' : 'Info') + '</span><b style="display:block;margin-top:6px">' + esc(t.judul) + '</b></td>' +
+              '<td class="tw">' + esc(t.detail) + '</td><td class="tw" style="color:var(--ink2)">' + esc(t.saran) + '</td>' +
+              '<td class="r">' + (t.link ? '<a class="btn sm" href="' + esc(t.link) + '">Buka</a>' : '') + '</td></tr>';
+          }).join('') + '</tbody></table></div>');
+      });
+    }
+    Z.app.innerHTML = html + '</div>';
+    $('#ksTahun').addEventListener('change', function (e) { Z.go('#/konsistensi?tahun=' + e.target.value); });
+  }
+  ACT.ksUlang = function () { Z.viewKonsistensi({ tahun: KS.tahun }); };
 })();

@@ -19,6 +19,7 @@ apps-script/              Backend Google Apps Script (semua file berbagi global 
   Matcher.gs              normName_, matchName_ (pencocok nama → sensus)
   Mustahiq.gs             daftar mustahiq, pembagian per jiwa (soq bulat per KK), penyerahan, penandatangan laporan (D-35, D-36)
   HapusMassal.gs          hapus massal setoran satu tahun + pulihkan (menu spreadsheet, D-37)
+  Konsistensi.gs          cek konsistensi data terhadap sensus, hanya baca (D-46)
   ImportParse.gs          parser murni sheet lama (muzakki, mal, bagian amil)
   Import.gs               imporSemua / imporTahun_ / terapkanReviewImpor
 web/                      Frontend GitHub Pages

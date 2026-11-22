@@ -211,6 +211,14 @@ Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfiguras
 - **Tandai diserahkan:** menyimpan angka final.
 - **Pengurus:** melihat angka final tanpa tombol *Atur hasil musyawarah*.
 
+### 19. Ubah setoran aman & cek konsistensi sensus (v1.7.3 & v1.8)
+- **Form Ubah setoran:** di sensus, pindahkan satu anggota KK yang sudah menyetor ke KK lain (atau gunakan kasus nyata), lalu buka Data Setoran › Ubah setoran itu. Anggota tersebut tetap tampil, tercentang, dan bertanda "Pindah ke KK …". Simpan, lalu pastikan jumlah jiwa tidak berkurang.
+- **Cek konsistensi:** Konfigurasi › *Cek konsistensi sensus*.
+  - Data yang cocok menampilkan "Semua data cocok dengan sensus".
+  - Setelah perubahan sensus di atas, muncul temuan "Jiwa sudah pindah KK" lengkap dengan saran dan tombol *Buka*.
+  - Ikuti saran, lalu *Periksa ulang*.
+- **Akses:** login pengurus/amil → membuka `#/konsistensi` dialihkan ke Pemantauan.
+
 ## Sign-Off
 
 | Role | Nama | Tanda Tangan | Tanggal |

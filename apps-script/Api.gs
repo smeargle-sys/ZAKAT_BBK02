@@ -52,7 +52,9 @@ function routes_() { return {
   simpanMustahiq:    { roles: ['admin'], fn: simpanMustahiq_ },
   serahMustahiq:     { roles: ['admin'], fn: serahMustahiq_ },
   simpanFinalMustahiq: { roles: ['admin'], fn: simpanFinalMustahiq_ },
-  simpanPenandatangan: { roles: ['admin'], fn: simpanPenandatangan_ }
+  simpanPenandatangan: { roles: ['admin'], fn: simpanPenandatangan_ },
+  // D-46: cek konsistensi data terhadap sensus (hanya baca)
+  cekKonsistensi:    { roles: ['admin'], fn: cekKonsistensi_ }
 }; }
 
 function handle_(p) {
