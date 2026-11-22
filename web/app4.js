@@ -232,11 +232,39 @@
       '<span style="flex:1"></span><button type="button" class="btn pri" data-act="ttdSimpan" data-tahun="' + c.Tahun + '">Simpan penandatangan</button></div>');
   };
   function ttdRow(t, i) {
-    return '<div class="ttd-row" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) 44px;gap:8px;align-items:end">' +
+    // Nama dipilih dari jamaah sensus (dropdown seperti cari amil); tetap bisa diketik bebas bila tidak ada di sensus.
+    return '<div class="ttd-row">' +
       '<label class="f" style="font-size:12px">Jabatan<input class="fi" data-ttd="jabatan" value="' + esc(t.jabatan) + '" placeholder="(posisi kosong)"></label>' +
-      '<label class="f" style="font-size:12px">Nama<input class="fi" data-ttd="nama" value="' + esc(t.nama) + '"></label>' +
-      '<button type="button" class="btn sm" style="height:44px" data-act="ttdHapus" aria-label="Hapus baris penandatangan">' + ICON.x + '</button></div>';
+      '<label class="f" style="font-size:12px">Nama (cari dari sensus)<span class="search" style="height:44px">' + ICON.search +
+      '<input type="search" data-ttd="nama" value="' + esc(t.nama) + '" placeholder="Ketik nama jamaah…" autocomplete="off">' +
+      '<button type="button" class="clr" data-act="hapusCari" aria-label="Hapus nama">' + ICON.x + '</button></span></label>' +
+      '<button type="button" class="btn sm" style="height:44px" data-act="ttdHapus" aria-label="Hapus baris penandatangan">' + ICON.x + '</button>' +
+      '<div class="results hidden" data-ttd-res style="grid-column:1/-1" role="listbox" aria-label="Hasil pencarian nama"></div></div>';
   }
+  /** Cari nama penandatangan di sensus (delegasi: baris bisa ditambah kapan saja). */
+  var ttdTm;
+  document.addEventListener('input', function (e) {
+    var inp = e.target;
+    if (!inp || !inp.matches || !inp.matches('[data-ttd=nama]')) return;
+    var row = inp.closest('.ttd-row'), res = $('[data-ttd-res]', row), q = inp.value.trim();
+    clearTimeout(ttdTm);
+    if (q.length < 2) { res.classList.add('hidden'); res.innerHTML = ''; return; }
+    res.classList.remove('hidden'); res.innerHTML = '<p class="sub" style="padding:12px;margin:0"><span class="spin"></span>Mencari nama di sensus…</p>';
+    ttdTm = setTimeout(function () {
+      Z.cariNama(q).then(function (r) {
+        if (inp.value.trim() !== q || !document.body.contains(inp)) return; // sudah diketik ulang / baris dihapus
+        r = r.filter(function (x) { return x.tipe === 'JM'; });
+        res.innerHTML = r.length ? r.map(function (x) {
+          return '<button type="button" role="option" data-act="ttdPilih" data-nama="' + esc(x.nama) + '"><span class="nm"><b>' + esc(x.nama) + '</b><span>' + esc(x.info) + '</span></span></button>';
+        }).join('') : '<p class="sub" style="padding:12px;margin:0">Nama tidak ditemukan di sensus. Nama yang diketik tetap bisa disimpan.</p>';
+      }).catch(function (er) { res.classList.add('hidden'); Z.fail(er); });
+    }, 300);
+  });
+  ACT.ttdPilih = function (el) {
+    var row = el.closest('.ttd-row'), inp = $('[data-ttd=nama]', row), res = $('[data-ttd-res]', row);
+    inp.value = el.getAttribute('data-nama');
+    res.classList.add('hidden'); res.innerHTML = '';
+  };
   ACT.ttdTambah = function () { $('#ttdRows').insertAdjacentHTML('beforeend', ttdRow({ jabatan: '', nama: '' })); };
   ACT.ttdHapus = function (el) { el.closest('.ttd-row').remove(); };
   ACT.ttdSimpan = function (el) {
