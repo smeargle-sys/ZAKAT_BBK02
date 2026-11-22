@@ -13,14 +13,18 @@ function zakatLain_(tahun) {
 /** Daftar KK sensus + status zakat fitrah tiap anggota pada tahun berjalan. */
 function kkList_(p, s) {
   var tahun = Number(p.tahun || tahunAktif_().Tahun);
-  var kel = keluargaMap_(readSensus_());
+  var sen = readSensus_(), kel = keluargaMap_(sen);
   var setoran = setoranFitrah_(tahun), jiwa = jiwaFitrah_(tahun);
   var sudahJM = {}, sudahSM = {};
   jiwa.forEach(function (j) { if (j.Tipe === 'JM') sudahJM[j.Ref_ID] = j.ID_Setoran; if (j.Tipe === 'SM') sudahSM[j.Ref_ID] = j.ID_Setoran; });
+  // D-48: label per KK mengikuti KK terbaru di sensus (KK asal bila masih ada, selain itu KK mayoritas jiwanya)
+  var tujuan = kkTujuanSetoran_(setoran, jiwa, sen, kel);
   var kurang = {}, kkSetor = {};
   setoran.forEach(function (r) {
-    kkSetor[r.ID_Keluarga] = true;
-    if (r.Status_Bayar === 'KURANG') kurang[r.ID_Keluarga] = (kurang[r.ID_Keluarga] || 0) + Math.abs(num_(r.Selisih_Rp));
+    var k = tujuan[String(r.ID)];
+    if (!k) return;
+    kkSetor[k] = true;
+    if (r.Status_Bayar === 'KURANG') kurang[k] = (kurang[k] || 0) + Math.abs(num_(r.Selisih_Rp));
   });
   var sm = daftarSimpatisan_();
   var list = Object.keys(kel).map(function (id) {

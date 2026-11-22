@@ -37,7 +37,11 @@ function cekKonsistensi_(p, s) {
     if (!kk || kel[kk]) return;
     var saran = 'Buka Konfigurasi › Master simpatisan › Ubah, lalu pilih KK yang benar (atau Berdiri sendiri).';
     var jid = kk.indexOf('TANPA-KK-') === 0 ? kk.slice(9) : '';
-    if (jid && info[jid] && info[jid].kk) saran = 'Jamaah ' + info[jid].nama + ' kini punya KK ' + namaKK(info[jid].kk) + '. ' + saran;
+    if (jid && info[jid] && info[jid].kk && kel[info[jid].kk]) {
+      tambah('simpatisan', 'info', 'Simpatisan otomatis ikut KK baru', String(m.Nama) + ' → KK ' + namaKK(info[jid].kk),
+        'Sudah otomatis tampil di KK baru (D-48). Untuk merapikan data, buka Ubah lalu Simpan simpatisan ini.', '#/config');
+      return;
+    }
     tambah('simpatisan', 'perlu', 'Simpatisan terlepas dari KK', String(m.Nama), saran, '#/config');
   });
 

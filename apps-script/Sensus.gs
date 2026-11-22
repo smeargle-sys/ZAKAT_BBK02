@@ -97,3 +97,42 @@ function keluargaMap_(s) {
   });
   return map;
 }
+
+/**
+ * D-48 (usulan C): KK "tujuan" tiap setoran untuk label per KK (Sebagian / Kurang bayar) dan hitungan
+ * "KK sudah setor", mengikuti sensus terbaru:
+ *  - KK asal setoran bila masih ada di sensus (riwayat & penagihan kurang bayar tetap di KK asal);
+ *  - bila KK asal sudah tidak ada (mis. kunci TANPA-KK-… setelah ID Keluarga dilengkapi), KK tempat
+ *    sebagian besar jiwa setoran itu berada sekarang.
+ * Status sudah/belum per jiwa tidak terpengaruh (selalu per ID Jamaah).
+ * @return {Object} idSetoran -> ID Keluarga tujuan ('' bila tidak ada)
+ */
+function kkTujuanSetoran_(setoran, jiwa, sen, kel) {
+  var kkJamaah = {};
+  sen.jamaah.forEach(function (j) { kkJamaah[j.id] = j.kk || ('TANPA-KK-' + j.id); });
+  var hitung = {};
+  jiwa.forEach(function (j) {
+    if (j.Tipe !== 'JM') return;
+    var k = kkJamaah[String(j.Ref_ID)]; if (!k) return;
+    var h = hitung[j.ID_Setoran] = hitung[j.ID_Setoran] || {};
+    h[k] = (h[k] || 0) + 1;
+  });
+  var out = {};
+  setoran.forEach(function (r) {
+    var asal = String(r.ID_Keluarga || '');
+    if (asal && kel[asal]) { out[String(r.ID)] = asal; return; }
+    var h = hitung[r.ID] || {}, best = '', n = 0;
+    Object.keys(h).forEach(function (k) { if (h[k] > n || (h[k] === n && k < best)) { best = k; n = h[k]; } });
+    out[String(r.ID)] = best || asal;
+  });
+  return out;
+}
+
+/** Kunci TANPA-KK-<ID Jamaah> yang jamaahnya kini punya ID Keluarga diarahkan ke KK barunya (D-48). */
+function resolusiKK_(id, sen, kel) {
+  id = String(id || '');
+  if (!id || kel[id] || id.indexOf('TANPA-KK-') !== 0) return id;
+  var jid = id.slice(9), j = null;
+  sen.jamaah.some(function (x) { if (x.id === jid) { j = x; return true; } return false; });
+  return j && j.kk && kel[j.kk] ? j.kk : id;
+}

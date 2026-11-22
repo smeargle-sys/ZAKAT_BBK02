@@ -157,13 +157,15 @@ function tahunBaru_(p, s) {
 /* ---------- Simpatisan & pencarian muzakki ---------- */
 
 function daftarSimpatisan_() {
-  var kel = keluargaMap_(readSensus_());
+  var sen = readSensus_(), kel = keluargaMap_(sen);
   // D-25: tandai simpatisan yang sudah zakat fitrah di tahun aktif, supaya form bisa menguncinya
   var sudah = {};
   jiwaFitrah_(tahunAktif_().Tahun).forEach(function (j) { if (j.Tipe === 'SM') sudah[String(j.Ref_ID)] = String(j.ID_Setoran); });
   return rowsOf_('Simpatisan', function (r) { return r.ID_SM && r.Dihapus !== 'Y'; }).map(function (r) {
-    return { id: String(r.ID_SM), sudah: !!sudah[String(r.ID_SM)], idSetoran: sudah[String(r.ID_SM)] || '', nama: String(r.Nama), jk: String(r.JK || ''), idKeluarga: String(r.ID_Keluarga || ''),
-      kkNama: r.ID_Keluarga && kel[r.ID_Keluarga] ? kel[r.ID_Keluarga].nama : '', hubungan: String(r.Hubungan || ''), hp: String(r.No_HP || ''), catatan: String(r.Catatan || '') };
+    // D-48: simpatisan yang terkait ke TANPA-KK-<jamaah> ikut KK baru jamaah itu setelah ID Keluarga dilengkapi
+    var kk = resolusiKK_(r.ID_Keluarga, sen, kel);
+    return { id: String(r.ID_SM), sudah: !!sudah[String(r.ID_SM)], idSetoran: sudah[String(r.ID_SM)] || '', nama: String(r.Nama), jk: String(r.JK || ''), idKeluarga: kk,
+      kkNama: kk && kel[kk] ? kel[kk].nama : '', hubungan: String(r.Hubungan || ''), hp: String(r.No_HP || ''), catatan: String(r.Catatan || '') };
   });
 }
 

@@ -33,7 +33,13 @@ function ringkasTahun_(tahun, detail) {
   var jiwaSensus = sen ? sen.jamaah.length : num_(c.Jiwa_Sensus);
   var kkSensus = sen ? sen.keluarga.length : num_(c.KK_Sensus);
   // KK = hanya yang punya ID Keluarga di sensus. Jamaah tanpa ID Keluarga (TANPA-KK-…) dihitung sebagai jiwa, bukan KK (D-28).
-  var kkSetor = Object.keys(F.reduce(function (a, r) { if (r.ID_Keluarga && !isTanpaKK_(r.ID_Keluarga)) a[r.ID_Keluarga] = 1; return a; }, {})).length;
+  // D-48: tahun berjalan mengikuti KK terbaru di sensus; tahun lama (tanpa sensus) memakai KK yang tersimpan
+  var kelNow = sen ? keluargaMap_(sen) : null, tujuan = sen ? kkTujuanSetoran_(F, jiwaFitrah_(tahun), sen, kelNow) : null;
+  var kkSetor = Object.keys(F.reduce(function (a, r) {
+    var k = tujuan ? tujuan[String(r.ID)] : String(r.ID_Keluarga || '');
+    if (k && !isTanpaKK_(k) && (!kelNow || kelNow[k])) a[k] = 1;
+    return a;
+  }, {})).length;
 
   // zakat mal & tijaroh per lampiran
   var lainMal = L.filter(function (r) { return r.Jenis !== 'FIDYAH'; });
