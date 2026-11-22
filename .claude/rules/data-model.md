@@ -34,7 +34,7 @@ Skema resmi ada di `SHEETS` di `apps-script/00_Config.gs`. Tabel di bawah menjel
 `ID, Nama, Peran(ADMIN|PENGURUS), PIN_Hash, Aktif, Dibuat`
 
 ## Simpatisan (lintas tahun)
-`ID_SM, Nama, JK, ID_Keluarga (kosong = berdiri sendiri), Hubungan, No_HP, Catatan, Dibuat`
+`ID_SM, Nama, JK, ID_Keluarga (kosong = berdiri sendiri), Hubungan, No_HP, Catatan, Dibuat, Dihapus` (soft delete, D-41)
 
 ## Setoran_Fitrah (1 baris per setoran)
 - **Kolom:** `ID, Tahun, Tanggal, Waktu_Input, ID_Keluarga, Nama_Muzakki, ID_Amil, Nama_Amil, Jenis(BERAS|UANG|KAMPUNG), Jiwa_JM, Jiwa_SM, Jiwa_Luar, Total_Jiwa, Kg_Beras, Harga_Soq, Wajib_Rp, Diterima_Rp, Selisih_Rp, Tujuan_Lebih(UB|KEMBALI), Status_Bayar(LUNAS|KURANG), Catatan, Sumber(APP|IMPOR), Match_Status, Dihapus, Diubah_Oleh, Diubah_Waktu, Dicatat_Oleh`

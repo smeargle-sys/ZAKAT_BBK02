@@ -131,7 +131,7 @@
     var c = S.boot.config, el = $('#fBayar');
     if (F.jenis === 'UANG') {
       el.innerHTML = '<h2 style="font-size:15px">Pembayaran titip uang</h2><div class="sum" id="fSum"></div>' +
-        '<label class="f">Uang diterima<span style="display:flex;align-items:center;gap:8px" ><span style="font-weight:600;color:var(--muted)">Rp</span><input id="fTerima" class="fi big" inputmode="numeric" data-rp" value="' + (F.diterima === '' ? '' : nf(F.diterima)) + '"></span></label>' +
+        '<label class="f">Uang diterima<span style="display:flex;align-items:center;gap:8px" ><span style="font-weight:600;color:var(--muted)">Rp</span><input id="fTerima" class="fi big" inputmode="numeric" data-rp value="' + (F.diterima === '' ? '' : nf(F.diterima)) + '"></span></label>' +
         '<div id="fSel"></div>' +
         '<fieldset id="fTujuanW" style="margin:0;border:0;padding:0;display:flex;flex-direction:column;gap:6px"><legend style="font-size:13px;font-weight:600;color:var(--ink2);padding:0 0 6px">Lebih bayar diserahkan ke</legend>' +
         '<label class="radio' + (F.tujuan === 'UB' ? ' on' : '') + '"><input type="radio" name="tujuan" value="UB"' + (F.tujuan === 'UB' ? ' checked' : '') + '>Usaha Bersama (UB)</label>' +
@@ -140,7 +140,7 @@
     } else if (F.jenis === 'BERAS') {
       el.innerHTML = '<h2 style="font-size:15px">Beras diterima</h2>' +
         '<label class="f">Berat beras (kg)<input id="fKg" class="fi big" inputmode="decimal" value="' + (F.kg === '' ? '' : String(F.kg).replace('.', ',')) + '"></label><p class="sub" style="margin:0" id="fKgHint"></p>' +
-        '<label class="f">Uang tambahan (opsional, masuk UB)<input id="fTerima" class="fi" inputmode="numeric" data-rp" value="' + (F.diterima ? nf(F.diterima) : '') + '"></label>';
+        '<label class="f">Uang tambahan (opsional, masuk UB)<input id="fTerima" class="fi" inputmode="numeric" data-rp value="' + (F.diterima ? nf(F.diterima) : '') + '"></label>';
     } else {
       el.innerHTML = '<div class="note ok">' + ICON.info + '<span>Dicatat <b>sudah zakat di kampung</b>. Tidak ada beras atau uang yang diterima amil.</span></div>';
     }
@@ -247,7 +247,16 @@
         '<span class="sub" style="font-weight:400">Pilih dari data sensus. Simpatisan terkait akan muncul di form setoran KK tersebut.</span></label>' +
         '<label class="f">Hubungan dengan KK<select id="smHub" class="fi">' + ['', 'Saudara jauh', 'Keponakan', 'Ipar', 'Orang tua / mertua', 'Asisten rumah tangga', 'Lainnya'].map(function (h) { return '<option' + (h === (sm.hubungan || '') ? ' selected' : '') + '>' + h + '</option>'; }).join('') + '</select></label>' +
         '<div class="fgrid"><label class="f">No HP (opsional)<input id="smHp" class="fi" type="tel" value="' + esc(sm.hp || '') + '"></label><label class="f">Catatan<input id="smCat" class="fi" value="' + esc(sm.catatan || '') + '"></label></div>' +
-        '<div style="display:flex;gap:10px"><button type="button" class="btn" style="flex:1" data-act="close">Batal</button><button type="button" class="btn pri" style="flex:2" id="smSave">Simpan simpatisan</button></div>');
+        '<div style="display:flex;gap:10px"><button type="button" class="btn" style="flex:1" data-act="close">Batal</button><button type="button" class="btn pri" style="flex:2" id="smSave">Simpan simpatisan</button></div>' +
+        (sm.id && S.role === 'admin' ? '<button type="button" class="btn danger block" id="smHapus">Hapus simpatisan</button>' : ''));
+      var bh = $('#smHapus');
+      if (bh) bh.addEventListener('click', function () {
+        if (!confirm('Hapus simpatisan ' + (sm.nama || '') + ' dari master? Riwayat setoran tahun lalu tetap tersimpan.')) return;
+        var box = $('#modal .box'); Z.sibuk(box, true);
+        api('hapusSimpatisan', { id: sm.id })
+          .then(function (r) { Z.closeModal(); Z.toast('Simpatisan dihapus.'); if (after) after('', r.list); })
+          .catch(function (e) { Z.sibuk(box, false); Z.fail(e); });
+      });
       $('#smSave').addEventListener('click', function () {
         var box = $('#modal .box'); Z.sibuk(box, true);
         api('simpanSimpatisan', { sm: { id: sm.id, nama: $('#smNama').value, jk: $('#smJk').value, idKeluarga: $('#smKK').value, hubungan: $('#smHub').value, hp: $('#smHp').value, catatan: $('#smCat').value } })

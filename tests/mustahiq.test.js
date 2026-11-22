@@ -50,7 +50,10 @@ assert(gk.anggota[0].kepala&&gk.anggota[0].nama===kkPenuh.find(j=>j.hub==='A').n
 assert.strictEqual(gk.anggota.filter(a=>a.kepala).length,1);
 const luar=d.grup.find(x=>x.tipe==='LUAR'); assert.strictEqual(luar.jiwa,3); assert(luar.anggota[0].kepala);
 assert.strictEqual(d.grup[d.grup.length-1].tipe,'LUAR','luar sensus di urutan akhir');
-assert.strictEqual(d.jiwa,pilih.length+kkPenuh.length+3);
+// D-40: kepala keluarga yang dipilih membawa seluruh anggota KK-nya
+const harap=new Set(pilih.map(a=>a.id)); pilih.forEach(a=>{ const j=sen.jamaah.find(x=>x.id===a.id); if(j.kk&&j.hub==='A') sen.jamaah.filter(x=>x.kk===j.kk).forEach(x=>harap.add(x.id)); });
+kkPenuh.forEach(j=>harap.add(j.id));
+assert.strictEqual(d.jiwa,harap.size+3);
 assert.strictEqual(d.pool,0,'belum ada setoran: pool 0');
 
 // ---------- pool dari setoran & pembagian per KK ----------
@@ -122,4 +125,33 @@ assert.throws(()=>g.pulihkanMassal_(hm.batch,'uji'),/sudah pernah dipulihkan/);
 assert.strictEqual(pl.jumlah.Bagian_Amil,1);
 // tahun tanpa data
 assert.strictEqual(Object.values(g.hitungHapusMassal_(2028)).reduce((a,b)=>a+b,0),0);
+
+// ---------- D-40: tambah kepala saja -> seluruh keluarga, asnaf sama ----------
+const kel2={}; sen.jamaah.filter(j=>j.kk).forEach(j=>{(kel2[j.kk]=kel2[j.kk]||[]).push(j);});
+const ada=new Set(g.call({action:'daftarMustahiq',token:admin,tahun:T}).data.grup.flatMap(x=>x.anggota.map(a=>a.refId)));
+const kel3=Object.values(kel2).find(a=>a.length>=3&&a.some(j=>j.hub==='A')&&a.every(j=>!ada.has(j.id)));
+const kep=kel3.find(j=>j.hub==='A');
+r=g.call({action:'simpanMustahiq',token:admin,tahun:T,op:'tambah',items:[{refId:kep.id,asnaf:'GHORIM'}]}); assert(r.ok,r.error);
+const g3=r.data.grup.find(x=>x.id===kep.kk);
+assert.strictEqual(g3.jiwa,kel3.length,'jiwa KK = total anggota di sensus');
+assert(g3.anggota.every(a=>a.asnaf==='GHORIM'),'asnaf ikut kepala'); assert(g3.anggota[0].kepala);
+// anggota bukan kepala: hanya dirinya
+const kel4=Object.values(kel2).find(a=>a.length>=3&&a.every(j=>!ada.has(j.id))&&a!==kel3&&a.some(j=>j.hub!=='A'));
+r=g.call({action:'simpanMustahiq',token:admin,tahun:T,op:'tambah',items:[{refId:kel4.find(j=>j.hub!=='A').id}]}); assert(r.ok);
+assert.strictEqual(r.data.grup.find(x=>x.id===kel4[0].kk).jiwa,1,'anggota biasa tidak membawa keluarga');
+
+// ---------- D-41: hapus simpatisan ----------
+r=g.call({action:'simpanSimpatisan',token:admin,sm:{nama:'Simpatisan Hapus Fiktif'}}); const smH=r.data.id;
+r=g.call({action:'simpanSimpatisan',token:admin,sm:{nama:'Simpatisan Dipakai Fiktif'}}); const smP=r.data.id;
+const tAktif=g.tahunAktif_().Tahun;
+r=g.call({action:'simpanFitrah',token:admin,tahun:tAktif,idAmil:'',idKeluarga:'',namaMuzakki:'Simpatisan Dipakai Fiktif',sm:[smP],jenis:'KAMPUNG'}); assert(r.ok,r.error);
+assert(!g.call({action:'hapusSimpatisan',token:a1,id:smH}).ok,'amil tidak boleh menghapus');
+r=g.call({action:'hapusSimpatisan',token:admin,id:smP}); assert(!r.ok&&/masih tercatat/.test(r.error),r.error);
+r=g.call({action:'hapusSimpatisan',token:admin,id:smH}); assert(r.ok,r.error);
+assert(!r.data.list.some(m=>m.id===smH),'tidak tampil lagi di master');
+assert(!g.call({action:'cariMuzakki',token:admin,q:'Simpatisan Hapus'}).data.some(m=>m.id===smH),'tidak muncul di pencarian');
+
+// ---------- D-40: daftarSetoran mengirim jumlah anggota KK sensus ----------
+const ds=g.call({action:'daftarSetoran',token:admin,tahun:T}).data.filter(x=>x.kelas==='FITRAH'&&x.idKeluarga&&x.idKeluarga.indexOf('TANPA-KK-')!==0);
+assert(ds.length&&ds.every(x=>x.kkJiwa===(kel2[x.idKeluarga]||[]).length),'kkJiwa = anggota KK di sensus');
 console.log('mustahiq: lulus');

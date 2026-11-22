@@ -147,7 +147,7 @@ function daftarSimpatisan_() {
   // D-25: tandai simpatisan yang sudah zakat fitrah di tahun aktif, supaya form bisa menguncinya
   var sudah = {};
   jiwaFitrah_(tahunAktif_().Tahun).forEach(function (j) { if (j.Tipe === 'SM') sudah[String(j.Ref_ID)] = String(j.ID_Setoran); });
-  return rowsOf_('Simpatisan', function (r) { return r.ID_SM; }).map(function (r) {
+  return rowsOf_('Simpatisan', function (r) { return r.ID_SM && r.Dihapus !== 'Y'; }).map(function (r) {
     return { id: String(r.ID_SM), sudah: !!sudah[String(r.ID_SM)], idSetoran: sudah[String(r.ID_SM)] || '', nama: String(r.Nama), jk: String(r.JK || ''), idKeluarga: String(r.ID_Keluarga || ''),
       kkNama: r.ID_Keluarga && kel[r.ID_Keluarga] ? kel[r.ID_Keluarga].nama : '', hubungan: String(r.Hubungan || ''), hp: String(r.No_HP || ''), catatan: String(r.Catatan || '') };
   });
@@ -165,6 +165,26 @@ function simpanSimpatisan_(p, s) {
     else { id = newId_('SM'); obj.ID_SM = id; obj.Dibuat = nowIso_() + ' · ' + (s.nama || s.role); appendObjects_('Simpatisan', [obj]); }
     log_(s, 'simpanSimpatisan', obj);
     return { id: String(id), list: daftarSimpatisan_() };
+  });
+}
+
+/**
+ * Hapus simpatisan dari master (soft delete, D-41). Riwayat setoran tetap utuh karena nama tersimpan di setoran.
+ * Ditolak bila simpatisan masih tercatat di setoran zakat fitrah tahun aktif: hapus/ubah setorannya dulu.
+ */
+function hapusSimpatisan_(p, s) {
+  var id = String(p.id || '');
+  return withLock_(function () {
+    var t = readTable_('Simpatisan');
+    if (t.headers.indexOf('Dihapus') < 0) throw new Error('Kolom Dihapus belum ada di sheet Simpatisan. Jalankan menu Zakat › Setup dulu.');
+    var row = t.rows.filter(function (r) { return String(r.ID_SM) === id && r.Dihapus !== 'Y'; })[0];
+    if (!row) throw new Error('Simpatisan tidak ditemukan.');
+    var tahun = tahunAktif_().Tahun;
+    var dipakai = jiwaFitrah_(tahun).some(function (j) { return j.Tipe === 'SM' && String(j.Ref_ID) === id; });
+    if (dipakai) throw new Error(row.Nama + ' masih tercatat di setoran zakat fitrah ' + tahun + '. Hapus atau ubah setoran itu dulu di Data Setoran.');
+    updateObject_(t, row, { Dihapus: 'Y' });
+    log_(s, 'hapusSimpatisan', { id: id, nama: row.Nama });
+    return { list: daftarSimpatisan_() };
   });
 }
 

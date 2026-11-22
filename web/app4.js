@@ -41,7 +41,8 @@
     var perJiwa = d.jiwa ? d.pool / d.jiwa : 0;
     var html = '<div class="wrap"><div class="head"><div class="t"><h1>Mustahiq Zakat Fitrah ' + esc(d.hijriah) + '</h1>' +
       '<p>Penerima bagian mustahiq kelompok · dibagi rata per jiwa · soq bulat per KK, total selalu pas</p></div>' + tahunSelect('muTahun', d.tahun) +
-      '<a class="btn noprint" href="#/laporan?jenis=mustahiq&amp;tahun=' + d.tahun + '">Cetak daftar mustahiq</a>' +
+      '<a class="btn noprint" href="#/laporan?jenis=kelompok&amp;tahun=' + d.tahun + '">Cetak untuk Kelompok</a>' +
+      '<a class="btn noprint" href="#/laporan?jenis=mustahiq&amp;tahun=' + d.tahun + '">Cetak untuk Daerah</a>' +
       '<a class="btn noprint" href="#/laporan?jenis=serah&amp;tahun=' + d.tahun + '">Lembar penyerahan</a></div>' +
       (!d.bagi ? '<div class="note warn">' + ICON.info + '<span>Tujuan bagian Mustahiq zakat fitrah tahun ini adalah <b>' + esc(d.ke) + '</b>, sehingga tidak dibagi di kelompok. Ubah di Konfigurasi bila perlu.</span></div>' :
         d.sementara ? '<div class="note warn">' + ICON.clock + '<span><b>Angka sementara</b> sampai batas zakat fitrah' + (d.batasFitrah ? ' (' + esc(Z.tglId(d.batasFitrah.replace(' ', 'T'))) + ')' : '') + '. Bagian mustahiq masih bertambah selama penerimaan dibuka. Sebaiknya beras diserahkan setelah batas.</span></div>' : '') +
@@ -66,7 +67,8 @@
       '<div>' + tampil.map(function (x) {
         return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:8px 20px;border-top:1px solid var(--line2)">' +
           '<label class="check" style="border:0;flex:1 1 280px;padding:0"><input type="checkbox" data-kand="' + esc(x.a.id) + '"><span class="nm"><b>' + esc(x.a.nama) + '</b><span>' +
-          esc((x.k.id.indexOf('TANPA-KK-') === 0 ? 'Tanpa KK' : 'KK ' + x.k.nama) + (x.a.umur !== '' && x.a.umur !== null && x.a.umur !== undefined ? ' · ' + x.a.umur + ' th' : '') + (x.a.keberadaan ? ' · ' + x.a.keberadaan : '')) + '</span></span></label>' +
+          esc((x.k.id.indexOf('TANPA-KK-') === 0 ? 'Tanpa KK' : 'KK ' + x.k.nama) + (x.a.umur !== '' && x.a.umur !== null && x.a.umur !== undefined ? ' · ' + x.a.umur + ' th' : '') + (x.a.keberadaan ? ' · ' + x.a.keberadaan : '')) + '</span>' +
+          (x.a.kepala && x.a.kkJiwa > 1 ? '<span class="chip mint" style="align-self:flex-start;margin-top:2px">Kepala keluarga · seluruh ' + x.a.kkJiwa + ' jiwa KK ikut terdaftar</span>' : '') + '</span></label>' +
           '<label class="f" style="flex-direction:row;align-items:center;gap:8px;font-size:13px">Asnaf<select class="fi" style="height:40px;width:auto" data-kand-asnaf="' + esc(x.a.id) + '">' + asnafOpt('MISKIN') + '</select></label></div>';
       }).join('') + '</div>' +
       '<div class="foot" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">' +
@@ -80,9 +82,9 @@
       var id = c.getAttribute('data-kand'); return { refId: id, asnaf: $('[data-kand-asnaf="' + id + '"]').value };
     });
     if (!items.length) { Z.toast('Centang minimal satu jamaah.', true); return; }
-    var sec = el.closest('section'); Z.sibuk(sec, true);
+    var sec = el.closest('section'), sebelum = MU.jiwa; Z.sibuk(sec, true);
     api('simpanMustahiq', { tahun: MU.tahun, op: 'tambah', items: items })
-      .then(function (d) { Z.toast(items.length + ' jiwa ditambahkan ke daftar mustahiq.'); segarMustahiq(d); })
+      .then(function (d) { Z.toast((d.jiwa - sebelum) + ' jiwa ditambahkan ke daftar mustahiq.'); segarMustahiq(d); })
       .catch(function (e) { Z.sibuk(sec, false); Z.fail(e); });
   };
 
@@ -119,8 +121,9 @@
   function anggotaById(id) { var hit = null; MU.grup.forEach(function (g) { g.anggota.forEach(function (a) { if (a.id === id) hit = { g: g, a: a }; }); }); return hit; }
   function simpanMu(box, body, pesan) {
     Z.sibuk(box, true);
+    var sebelum = MU.jiwa;
     return api('simpanMustahiq', Object.assign({ tahun: MU.tahun }, body))
-      .then(function (d) { Z.closeModal(); Z.toast(pesan); segarMustahiq(d); })
+      .then(function (d) { Z.closeModal(); Z.toast(typeof pesan === 'function' ? pesan(d.jiwa - sebelum) : pesan); segarMustahiq(d); })
       .catch(function (e) { Z.sibuk(box, false); Z.fail(e); });
   }
   ACT.muUbah = function (el) {
@@ -164,6 +167,7 @@
       '<label class="f">Cari nama jamaah<span class="search">' + ICON.search + '<input id="muCq" type="search" placeholder="Ketik minimal 2 huruf…"><button type="button" class="clr" data-act="hapusCari" aria-label="Hapus pencarian">' + ICON.x + '</button></span></label>' +
       '<div class="results hidden" id="muCres"></div><div id="muCpilih"></div>' +
       '<label class="f">Asnaf<select id="muAsnaf" class="fi">' + asnafOpt('MISKIN') + '</select></label>' +
+      '<p class="sub" style="margin:0">Bila yang dipilih kepala keluarga, seluruh anggota KK di sensus ikut terdaftar (asnaf sama). Anggota yang tidak termasuk bisa dikeluarkan sesudahnya.</p>' +
       '<button type="button" class="btn pri block" id="muSimpan">Tambahkan ke daftar</button>');
     var box = $('#modal .box'), pilih = null, tm;
     var sudah = {}; MU.grup.forEach(function (g) { g.anggota.forEach(function (a) { if (a.refId) sudah[a.refId] = 1; }); });
@@ -189,7 +193,7 @@
     });
     $('#muSimpan').addEventListener('click', function () {
       if (!pilih) { Z.toast('Pilih jamaah dari hasil pencarian.', true); return; }
-      simpanMu(box, { op: 'tambah', items: [{ refId: pilih.id, asnaf: $('#muAsnaf').value }] }, pilih.nama + ' ditambahkan ke daftar mustahiq.');
+      simpanMu(box, { op: 'tambah', items: [{ refId: pilih.id, asnaf: $('#muAsnaf').value }] }, function (n) { return pilih.nama + (n > 1 ? ' dan ' + (n - 1) + ' anggota keluarganya' : '') + ' ditambahkan ke daftar mustahiq.'; });
     });
   };
   function serah(el, batal) {
@@ -278,14 +282,14 @@
   // =====================================================================
   // LAPORAN RESMI (cetak / simpan PDF) — format mengikuti laporan pemilik 2025 (D-36)
   // =====================================================================
-  var JENIS_LAP = [['fitrah', 'Muzakki Zakat Fitrah'], ['mal', 'Zakat Mal · Lampiran Utama'], ['susulan', 'Zakat Mal · Lampiran Susulan'], ['mustahiq', 'Daftar Mustahiq'], ['serah', 'Lembar Penyerahan Mustahiq']];
+  var JENIS_LAP = [['fitrah', 'Muzakki Zakat Fitrah'], ['mal', 'Zakat Mal · Lampiran Utama'], ['susulan', 'Zakat Mal · Lampiran Susulan'], ['mustahiq', 'Daftar Mustahiq untuk Daerah'], ['kelompok', 'Daftar Mustahiq untuk Kelompok'], ['serah', 'Lembar Penyerahan Mustahiq']];
   var LP = { jenis: 'fitrah' };
   Z.viewLaporan = function (q) {
     LP.jenis = q.jenis || LP.jenis;
     Z.loading('Menyiapkan laporan…');
     Z.ensureBoot().then(function () {
       var t = Number(q.tahun || S.tahun || S.boot.tahunAktif); LP.tahun = t;
-      var butuh = LP.jenis === 'mustahiq' || LP.jenis === 'serah' ? [ambil('daftarMustahiq', { tahun: t }), ambil('dashboard', { tahun: t })]
+      var butuh = LP.jenis === 'mustahiq' || LP.jenis === 'kelompok' || LP.jenis === 'serah' ? [ambil('daftarMustahiq', { tahun: t }), ambil('dashboard', { tahun: t })]
         : [ambil('daftarSetoran', { tahun: t }), ambil('dashboard', { tahun: t })];
       return Promise.all(butuh);
     }).then(Z.jaga(function (r) { renderLaporan(r[0], r[1]); })).catch(Z.fail);
@@ -293,7 +297,7 @@
   function renderLaporan(data, dash) {
     var land = LP.jenis === 'fitrah';
     var isi = LP.jenis === 'fitrah' ? lapFitrah(data, dash) : LP.jenis === 'mal' || LP.jenis === 'susulan' ? lapMal(data, dash, LP.jenis === 'susulan' ? 'SUSULAN' : 'UTAMA')
-      : LP.jenis === 'mustahiq' ? lapMustahiq(data, dash) : lapSerah(data, dash);
+      : LP.jenis === 'mustahiq' ? lapMustahiq(data, dash) : LP.jenis === 'kelompok' ? lapKelompok(data, dash) : lapSerah(data, dash);
     Z.app.innerHTML = '<div class="wrap"><div class="head noprint"><div class="t"><h1>Laporan</h1><p>Format laporan resmi kelompok · tekan Cetak lalu pilih "Simpan sebagai PDF" untuk berkas PDF</p></div>' +
       tahunSelect('lpTahun', LP.tahun) + '<button type="button" class="btn pri" onclick="window.print()">Cetak / Simpan PDF</button></div>' +
       '<div class="filters noprint" role="group" aria-label="Jenis laporan">' + JENIS_LAP.map(function (j) {
@@ -321,7 +325,7 @@
     var body = list.map(function (r, i) {
       var tot = r.jiwa.jm + r.jiwa.luar + r.jiwa.sm;
       if (r.jenis === 'KAMPUNG') t.kampung += tot; else { t.jm += r.jiwa.jm; t.luar += r.jiwa.luar; t.sm += r.jiwa.sm; t.tot += tot; }
-      return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(r.nama) + '</td><td>' + esc(r.amil) + '</td><td class="c">' + (r.jiwa.jm || '') + '</td><td class="c">' + (r.jiwa.luar || '') + '</td><td class="c">' + (r.jiwa.sm || '') + '</td><td class="r">' + tot + '</td>' +
+      return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(namaLapFitrah(r)) + '</td><td>' + esc(r.amil) + '</td><td class="c">' + (r.jiwa.jm || '') + '</td><td class="c">' + (r.jiwa.luar || '') + '</td><td class="c">' + (r.jiwa.sm || '') + '</td><td class="r">' + tot + '</td>' +
         '<td' + (r.jenis === 'UANG' ? ' style="color:#1D4ED8"' : '') + '>' + J[r.jenis] + '</td></tr>';
     }).join('');
     var pf = {}; (dash.pembagianFitrah || []).forEach(function (p) { pf[p.key] = p; });
@@ -338,6 +342,36 @@
       '<tr><td>- ' + nf(pb('amilDesa').pct) + '% AMIL DESA</td><td class="c">' + pb('amilDesa').soq + '</td></tr>' +
       '<tr><td>- ' + nf(pb('amilDaerah').pct) + '% AMIL DAERAH</td><td class="c">' + pb('amilDaerah').soq + '</td></tr>' +
       '<tr class="b"><td colspan="2" class="r">TOTAL</td><td class="c">' + (dash.fitrah ? dash.fitrah.soqDiterima : t.tot) + '</td></tr></tbody></table>' + ttdBlok(dash.penandatangan) + '</div>';
+  }
+
+  /**
+   * D-40: bila satu setoran tidak mencakup seluruh anggota KK (sebagian menyetor, atau menyetor terpisah),
+   * tulis nama jiwa yang dizakati diikuti nama kepala keluarga: "Siti, Andi (KK Budi Hartono)".
+   * Setoran seluruh keluarga cukup nama KK. Data impor (tanpa rincian jiwa) tetap nama KK.
+   */
+  function namaLapFitrah(r) {
+    var jiwa = r.jiwaNama || [];
+    if (!jiwa.length || !r.kkJiwa || r.jiwa.jm >= r.kkJiwa) return r.nama;
+    return jiwa.join(', ') + ' (KK ' + r.nama + ')';
+  }
+
+  /** "NAMA MUSTAHIQ BABAKAN BARAT <tahun>": 1 baris per KK penerima, format lampiran pemilik 2026 (D-40). */
+  function lapKelompok(d, dash) {
+    var LBL = { FAKIR: 'FAQIR', MISKIN: 'MISKIN', GHORIM: 'GHORIM', MUALAF: 'MUALAF', IBNU_SABIL: 'IBNU SABIL', SABILILLAH: 'SABILILLAH' };
+    var pm = (dash.pembagianFitrah || []).filter(function (x) { return x.key === 'mustahiq'; })[0] || { pct: 45 };
+    var rows = d.grup.map(function (g, i) {
+      var kep = g.anggota.filter(function (a) { return a.kepala; })[0];
+      var asn = g.anggota.map(function (a) { return LBL[a.asnaf] || a.asnaf; }).filter(function (x, k, arr) { return arr.indexOf(x) === k; }).join(' / ');
+      var bagi = d.jiwa ? g.jiwa * d.pool / d.jiwa : 0;
+      return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(String(kep && g.tipe === 'KK' ? kep.nama : g.nama).toUpperCase()) + '</td><td class="c">' + esc(asn) + '</td>' +
+        '<td class="c">' + g.jiwa + '</td><td class="c">1</td><td class="c">' + nf(bagi, 1) + '</td><td class="c">' + g.soq + '</td></tr>';
+    }).join('');
+    return '<h3 class="c">NAMA MUSTAHIQ ' + esc(namaKelompok().toUpperCase()) + ' ' + d.tahun + '</h3>' +
+      '<table><thead><tr><th>NO</th><th>NAMA</th><th>ASNAF</th><th>JIWA</th><th>PERHITUNGAN PER SOK PER JIWA</th><th>PEMBAGIAN ZAKAT FITRAH (SOK)</th><th>PEMBULATAN ZAKAT FITRAH</th></tr></thead><tbody>' +
+      (rows || '<tr><td colspan="7" class="c">Daftar mustahiq belum diisi.</td></tr>') +
+      '<tr class="b"><td colspan="3"></td><td class="c">' + d.jiwa + '</td><td></td><td class="c">' + nf(d.pool, 1) + '</td><td class="c">' + nf(d.pool) + '</td></tr>' +
+      '<tr><td colspan="5" style="border:0"></td><td class="c" style="background:#C9DAF8;font-weight:800">total SOK (' + nf(pm.pct) + '% MUSTAHIQ)</td><td class="c" style="background:#C9DAF8;font-weight:800">' + nf(d.pool) + '</td></tr></tbody></table>' +
+      '<p class="ket">Jiwa = anggota KK yang terdaftar sebagai mustahiq (kepala keluarga membawa seluruh anggota KK di sensus). Pembagian = jiwa × ' + nf(d.pool) + ' : ' + d.jiwa + ' soq. Pembulatan memakai sisa terbesar sehingga total tepat ' + nf(d.pool) + ' soq.</p>';
   }
 
   function lapMal(rows, dash, lp) {
@@ -399,7 +433,7 @@
       return '<tr><td class="c">' + (i + 1) + '</td><td class="b">' + esc(g.nama) + (g.tipe === 'TANPA_KK' ? ' (tanpa KK)' : g.tipe === 'LUAR' ? ' (luar sensus)' : '') + '</td><td>' + esc(asn) + '</td><td class="c">' + g.jiwa + '</td><td class="c">' + g.soq + '</td><td class="r">' + kgf(g.kg) + '</td><td class="ttdk">' + (i + 1) + '.</td></tr>';
     }).join('');
     return '<h3 class="c">LEMBAR PENYERAHAN ZAKAT FITRAH UNTUK MUSTAHIQ ' + esc(d.hijriah) + ' / ' + d.tahun + '<br>' + esc(String(S.boot.kelompok || '').toUpperCase()) + ' · DESA ' + esc(wilayah().desa.toUpperCase()) + ' · ' + esc(wilayah().daerah.toUpperCase()) + '</h3>' +
-      '<p class="c ket">Bagian mustahiq = ' + nf(d.pool) + ' soq (' + kgf(d.poolKg) + ' kg) · ' + d.jiwa + ' jiwa · ' + d.grup.length + ' KK · dibagi rata per jiwa' + (d.sementara ? ' · <b>angka sementara</b>' : '') + '</p>' +
+      '<p class="c ket">Bagian mustahiq = ' + nf(d.pool) + ' soq (' + kgf(d.poolKg) + ' kg) · ' + d.jiwa + ' jiwa · ' + d.grup.length + ' KK · dibagi rata per jiwa</p>' +
       '<table><thead><tr><th>No</th><th>Nama KK / penerima</th><th>Asnaf</th><th>Jiwa</th><th>Soq</th><th>Kg</th><th style="width:130px">Tanda tangan</th></tr></thead><tbody>' +
       (rows || '<tr><td colspan="7" class="c">Daftar mustahiq belum diisi.</td></tr>') +
       '<tr class="tot"><td colspan="3">JUMLAH</td><td class="c">' + tot.jiwa + '</td><td class="c">' + tot.soq + '</td><td class="r">' + kgf(tot.kg) + '</td><td></td></tr></tbody></table>' + ttdBlok(dash.penandatangan);

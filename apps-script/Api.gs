@@ -32,6 +32,7 @@ function routes_() { return {
   hapusLain:         { roles: ['admin'], fn: hapusLain_ },
   daftarSimpatisan:  { roles: ['admin', 'amil'], fn: daftarSimpatisan_ },
   simpanSimpatisan:  { roles: ['admin', 'amil'], fn: simpanSimpatisan_ },
+  hapusSimpatisan:   { roles: ['admin'], fn: hapusSimpatisan_ },
   dashboard:         { roles: ['admin', 'amil', 'pengurus'], fn: dashboard_ },
   tren:              { roles: ['admin', 'amil', 'pengurus'], fn: tren_ },
   daftarSetoran:     { roles: ['admin', 'amil', 'pengurus'], fn: daftarSetoran_ },

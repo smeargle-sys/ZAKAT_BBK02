@@ -83,7 +83,7 @@ function kandidatMustahiq_(sen, grup) {
     if (!perluDibantu_(j.bantu) || sudah[j.id]) return;
     var key = j.kk || ('TANPA-KK-' + j.id);
     if (!per[key]) { per[key] = { id: key, nama: kel[key] ? kel[key].nama : j.nama, anggota: [] }; keys.push(key); }
-    per[key].anggota.push({ id: j.id, nama: j.nama, umur: j.umur, keberadaan: j.keberadaan, kepala: isKepala_(j.hub) });
+    per[key].anggota.push({ id: j.id, nama: j.nama, umur: j.umur, keberadaan: j.keberadaan, kepala: isKepala_(j.hub), kkJiwa: kel[key] ? kel[key].anggota.length : 1 });
   });
   return keys.map(function (k) { return per[k]; }).sort(function (a, b) { return a.nama < b.nama ? -1 : 1; });
 }
@@ -109,14 +109,24 @@ function simpanMustahiq_(p, s) {
       var ada = {}; aktif.forEach(function (r) { if (r.Ref_ID) ada[String(r.Ref_ID)] = 1; });
       var items = p.items || [];
       if (!items.length) throw new Error('Pilih minimal satu jamaah.');
-      var baru = items.map(function (it) {
+      var baru = [];
+      var tambah = function (j, asnaf, catatan) {
+        var key = j.kk || ('TANPA-KK-' + j.id);
+        ada[j.id] = 1;
+        baru.push({ ID: newId_('MS'), Tahun: tahun, Tipe: 'JM', Ref_ID: j.id, Nama: j.nama, ID_Keluarga: key, Nama_KK: kel[key] ? kel[key].nama : j.nama,
+          Jiwa: 1, Asnaf: asnaf, Catatan: catatan || '', Dibuat_Oleh: stamp.Dibuat_Oleh, Dibuat_Waktu: stamp.Dibuat_Waktu });
+      };
+      items.forEach(function (it) {
         var j = info[String(it.refId)];
         if (!j) throw new Error('Jamaah tidak ditemukan di sensus.');
         if (ada[j.id]) throw new Error(j.nama + ' sudah ada di daftar mustahiq tahun ini.');
-        ada[j.id] = 1;
-        var key = j.kk || ('TANPA-KK-' + j.id);
-        return { ID: newId_('MS'), Tahun: tahun, Tipe: 'JM', Ref_ID: j.id, Nama: j.nama, ID_Keluarga: key, Nama_KK: kel[key] ? kel[key].nama : j.nama,
-          Jiwa: 1, Asnaf: asnafValid_(it.asnaf), Catatan: it.catatan || '', Dibuat_Oleh: stamp.Dibuat_Oleh, Dibuat_Waktu: stamp.Dibuat_Waktu };
+        var asnaf = asnafValid_(it.asnaf);
+        tambah(j, asnaf, it.catatan);
+        // D-40: bila kepala keluarga ditetapkan mustahiq, seluruh anggota KK di sensus ikut terdaftar (asnaf sama).
+        // Anggota yang tidak termasuk bisa dikeluarkan satu per satu sesudahnya.
+        if (j.kk && isKepala_(j.hub) && kel[j.kk]) {
+          kel[j.kk].anggota.forEach(function (a) { if (!ada[a.id]) tambah(a, asnaf, 'ikut kepala keluarga'); });
+        }
       });
       appendObjects_('Mustahiq', baru);
       log_(s, 'tambahMustahiq', { tahun: tahun, n: baru.length });

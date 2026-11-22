@@ -37,7 +37,7 @@ var SHEETS = {
     'Jiwa_Sensus', 'KK_Sensus', 'Jiwa_Mustahiq', 'Catatan', 'Penandatangan'],
   Amil: ['Tahun', 'ID_Amil', 'Nama', 'ID_Jamaah', 'Jabatan', 'Saham', 'Aktif', 'PIN_Hash'],
   Pengguna: ['ID', 'Nama', 'Peran', 'PIN_Hash', 'Aktif', 'Dibuat'],
-  Simpatisan: ['ID_SM', 'Nama', 'JK', 'ID_Keluarga', 'Hubungan', 'No_HP', 'Catatan', 'Dibuat'],
+  Simpatisan: ['ID_SM', 'Nama', 'JK', 'ID_Keluarga', 'Hubungan', 'No_HP', 'Catatan', 'Dibuat', 'Dihapus'],
   Setoran_Fitrah: ['ID', 'Tahun', 'Tanggal', 'Waktu_Input', 'ID_Keluarga', 'Nama_Muzakki', 'ID_Amil', 'Nama_Amil', 'Jenis',
     'Jiwa_JM', 'Jiwa_SM', 'Jiwa_Luar', 'Total_Jiwa', 'Kg_Beras', 'Harga_Soq', 'Wajib_Rp', 'Diterima_Rp', 'Selisih_Rp',
     'Tujuan_Lebih', 'Status_Bayar', 'Catatan', 'Sumber', 'Match_Status', 'Dihapus', 'Diubah_Oleh', 'Diubah_Waktu', 'Dicatat_Oleh'],

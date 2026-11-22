@@ -182,6 +182,20 @@ Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfiguras
 
 ---
 
+### 17. Perbaikan v1.6
+**Persiapan:** jalankan `setupZakat` sekali (kolom `Simpatisan.Dihapus`).
+
+- **Uang diterima (Titip uang):** ketik 1250000 → langsung tampil 1.250.000 tanpa pindah tab.
+- **Laporan Muzakki Zakat Fitrah:** catat setoran hanya untuk sebagian anggota KK (atau dua setoran terpisah). Di laporan, baris itu tertulis "Nama jiwa (KK Nama Kepala)". Setoran satu keluarga penuh tetap nama KK.
+- **Hapus simpatisan:** Konfigurasi › Master simpatisan › Ubah › *Hapus simpatisan*.
+  - Simpatisan yang sudah menyetor tahun ini ditolak dengan pesan jelas.
+- **Mustahiq: kepala keluarga** (kandidat bertanda "seluruh n jiwa KK ikut terdaftar" atau lewat cari nama) → seluruh anggota KK masuk daftar.
+  - Anggota yang tidak termasuk bisa dikeluarkan.
+- **Laporan:**
+  - chip *Daftar Mustahiq untuk Daerah* (per jiwa, anggota keluarga dirinci);
+  - chip baru *Daftar Mustahiq untuk Kelompok* ("NAMA MUSTAHIQ BABAKAN BARAT", per KK, pembagian desimal & pembulatan, total = bagian mustahiq);
+  - *Lembar Penyerahan* tanpa teks "angka sementara".
+
 ## Sign-Off
 
 | Role | Nama | Tanda Tangan | Tanggal |
