@@ -38,3 +38,13 @@ build/
 .clasp.json
 # File hasil generate (jalankan node scripts/gen-copy-paste-guide.js bila perlu)
 docs/panduan/copy-paste-files.txt
+
+# ---- Takedown 2026-11-23: repo publik hanya berisi file web (GitHub Pages) ----
+# Sumber backend, dokumentasi, spec, test, dan konfigurasi agen tetap ada di LOKAL saja.
+/.claude/
+/.kiro/
+/apps-script/
+/docs/
+/tests/
+/scripts/
+/package.json
