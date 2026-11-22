@@ -15,5 +15,8 @@
 | Dashboard Tren Tahunan | `#/tren` | data asli 2024–2026 |
 | Admin · Konfigurasi | `#/config` | tahun & harga, batas, persentase, amil + PIN, simpatisan, pengguna |
 | Admin · Panel Tambah Simpatisan | modal di Konfigurasi & form fitrah | pilih KK dari sensus atau berdiri sendiri |
+| Admin · Mustahiq: daftar, pembagian 45% per jiwa & penyerahan | `#/mustahiq` (baru, D-35) | kandidat *Perlu Dibantu* (admin saja), daftar per KK + asnaf per jiwa, soq bulat per KK, tandai diserahkan. Pengurus: tanpa kandidat & tombol ubah. Amil: tidak ada menu |
+| Admin · Panel Tambah Penerima Luar Sensus | modal di `#/mustahiq` | nama, jumlah jiwa, asnaf, catatan, perkiraan bagian |
+| Cetak · Daftar Penerimaan Zakat Fitrah (A4) | cetak dari `#/mustahiq` | No, KK/penerima, asnaf, jiwa, soq, kg, tanda tangan + blok tanda tangan pengurus |
 
 Desain layar baru dibuat konsultan di canvas yang sama (artboard baru), lalu ditautkan di tabel ini.

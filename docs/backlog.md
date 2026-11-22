@@ -6,8 +6,8 @@ Status: **PERLU DESAIN** = sudah disebut pemilik, desain belum dibuat konsultan 
 
 | ID | Item | Status | Prioritas usulan | Catatan & yang sudah diketahui |
 |---|---|---|---|---|
-| B-01 | **Daftar mustahiq per tahun** | PERLU DESAIN | Tinggi | Lihat rincian di bawah tabel. |
-| B-02 | **Pembagian 45% mustahiq zakat fitrah** + cetak daftar penerimaan | PERLU DESAIN | Tinggi | Lihat rincian di bawah tabel. |
+| B-01 | **Daftar mustahiq per tahun** | SIAP | Tinggi | D-35. Desain: `docs/handoff/2026-11-22-desain-mustahiq.md`. Spec: `.kiro/specs/mustahiq/`. |
+| B-02 | **Pembagian 45% mustahiq zakat fitrah** + cetak daftar penerimaan | SIAP | Tinggi | D-35: rata per jiwa, soq bulat per KK (sisa terbesar), tandai diserahkan. Cara "per saham kebutuhan" tidak dipilih (bisa jadi opsi nanti). |
 | B-03 | **Penyaluran Sabilillah / bantuan kelompok** | PERLU DESAIN | Sedang | Lihat rincian di bawah tabel. |
 | B-04 | **Cetak laporan resmi** "Daftar Penerimaan dan Pembagian Zakat Fitrah / Zakat Mal Tijaroh" | USULAN | Sedang | Format seperti sheet lama: rekap jiwa, pembagian soq, disetor ke Desa/Daerah, blok tanda tangan (KI/KU/Mubaligh/Amil). Saat ini baru ada "Cetak rekap" dari dashboard. |
 | B-05 | Kirim rekap ke grup WhatsApp pengurus (1 tap, seperti absensi) | USULAN | Sedang | Ringkasan harian selama Ramadhan: progres jiwa, beras/uang, mal, KK belum setor. Versi untuk jamaah (tanpa nominal) sudah jadi B-11. Mekanisme bagikannya bisa dipakai ulang. |
@@ -45,5 +45,6 @@ Status: **PERLU DESAIN** = sudah disebut pemilik, desain belum dibuat konsultan 
   - Apakah termasuk lingkup aplikasi zakat?
 
 ## Riwayat
+- 2026-11-22: B-01 & B-02 didesain bersama pemilik → SIAP (D-35).
 - 2026-11-22: B-11 (SIAP) dan B-12 (USULAN) ditambahkan dari handoff 5 fitur. Lihat D-23 s.d. D-28.
 - 2026-11-22: backlog awal dibuat dari diskusi MVP (konsultan).
