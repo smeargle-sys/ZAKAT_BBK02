@@ -51,6 +51,7 @@ function routes_() { return {
   daftarMustahiq:    { roles: ['admin', 'pengurus'], fn: daftarMustahiq_ },
   simpanMustahiq:    { roles: ['admin'], fn: simpanMustahiq_ },
   serahMustahiq:     { roles: ['admin'], fn: serahMustahiq_ },
+  simpanFinalMustahiq: { roles: ['admin'], fn: simpanFinalMustahiq_ },
   simpanPenandatangan: { roles: ['admin'], fn: simpanPenandatangan_ }
 }; }
 

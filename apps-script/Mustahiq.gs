@@ -56,20 +56,30 @@ function daftarMustahiq_(p, s) {
   var pm = poolMustahiq_(tahun, c), bagi = pm.ke === 'Kelompok';
   var sen = readSensus_(), grup = grupMustahiq_(mustahiqTahun_(tahun), sen);
   var hasil = bagi && grup.length ? splitLargestRemainder_(pm.pool, grup.map(function (g) { return { key: g.id, pct: g.jiwa }; })) : {};
+  var final = finalMustahiq_(tahun);
   var serah = {};
   (ss_().getSheetByName('Mustahiq_Serah') ? rowsOf_('Mustahiq_Serah', function (r) { return String(r.Tahun) === String(tahun) && r.Dihapus !== 'Y'; }) : [])
     .forEach(function (r) { serah[String(r.ID_Keluarga)] = { soq: num_(r.Soq), kg: num_(r.Kg), tanggal: toDateStr_(r.Tanggal), oleh: String(r.Oleh || '') }; });
   var out = { tahun: tahun, hijriah: c.Hijriah, kgSoq: kgSoq, ke: pm.ke, bagi: bagi, soqDiterima: pm.soqDiterima,
     pool: bagi ? pm.pool : 0, sementara: c.Status === 'BUKA' && !batasFitrahLewat_(c), batasFitrah: String(c.Batas_Fitrah || ''),
-    jiwa: 0, serahKK: 0, serahSoq: 0, asnaf: {}, grup: grup };
+    jiwa: 0, serahKK: 0, serahSoq: 0, asnaf: {}, grup: grup, adaFinal: false, totalSoq: 0 };
   out.poolKg = Math.round(out.pool * kgSoq * 100) / 100;
   grup.forEach(function (g) {
-    g.soq = hasil[g.id] || 0; g.kg = Math.round(g.soq * kgSoq * 100) / 100;
+    // D-42: angka acuan (sisa terbesar) + angka final hasil musyawarah. Final kosong = acuan.
+    g.acuan = hasil[g.id] || 0;
+    g.final = bagi && final[g.id] ? final[g.id].soq : null;
+    g.catatanFinal = final[g.id] ? final[g.id].catatan : '';
+    g.soq = g.final !== null ? g.final : g.acuan;
+    g.kg = Math.round(g.soq * kgSoq * 100) / 100;
     g.serah = serah[g.id] || null; g.berubah = !!(g.serah && g.serah.soq !== g.soq);
     out.jiwa += g.jiwa;
     if (g.serah) { out.serahKK++; out.serahSoq += g.serah.soq; }
+    if (g.final !== null) out.adaFinal = true;
+    out.totalSoq += g.soq;
     g.anggota.forEach(function (a) { out.asnaf[a.asnaf] = (out.asnaf[a.asnaf] || 0) + a.jiwa; });
   });
+  // selisih total yang dibagikan (final/acuan) terhadap bagian mustahiq: + lebih, - kurang (D-42)
+  out.selisih = out.totalSoq - out.pool;
   // kandidat "Perlu Dibantu" hanya untuk admin (D-35, privasi)
   if (s && s.role === 'admin') out.kandidat = kandidatMustahiq_(sen, grup);
   return out;
@@ -199,4 +209,42 @@ function simpanPenandatangan_(p, s) {
     log_(s, 'simpanPenandatangan', { tahun: tahun, n: bersih.length });
     return bersih;
   });
+}
+
+/** Angka final musyawarah per KK untuk satu tahun: { idKeluarga: {soq, catatan} }. */
+function finalMustahiq_(tahun) {
+  var out = {};
+  if (!ss_().getSheetByName('Mustahiq_Final')) return out;
+  rowsOf_('Mustahiq_Final', function (r) { return String(r.Tahun) === String(tahun) && r.Soq_Final !== '' && r.Soq_Final !== null; })
+    .forEach(function (r) { out[String(r.ID_Keluarga)] = { soq: num_(r.Soq_Final), catatan: String(r.Catatan || '') }; });
+  return out;
+}
+
+/**
+ * Simpan angka final hasil musyawarah (D-42), mengganti semua angka final tahun itu.
+ * items: [{idKeluarga, soq ('' = pakai acuan), catatan}]. Soq bulat >= 0. Total boleh tidak sama dengan
+ * bagian mustahiq; selisihnya ditampilkan di halaman & laporan.
+ */
+function simpanFinalMustahiq_(p, s) {
+  var tahun = Number(p.tahun || tahunAktif_().Tahun);
+  var d = daftarMustahiq_({ tahun: tahun }, s);
+  if (!d.bagi) throw new Error('Bagian mustahiq tidak dibagi di kelompok tahun ini.');
+  var nama = {}; d.grup.forEach(function (g) { nama[g.id] = g.nama; });
+  var baris = [];
+  (p.items || []).forEach(function (it) {
+    var key = String(it.idKeluarga || ''), v = it.soq;
+    if (!nama[key] || v === '' || v === null || v === undefined) return;
+    var n = Number(String(v).replace(',', '.'));
+    if (!isFinite(n) || n < 0 || Math.round(n) !== n) throw new Error('Angka final untuk ' + nama[key] + ' harus bilangan bulat 0 atau lebih.');
+    baris.push({ Tahun: tahun, ID_Keluarga: key, Nama_KK: nama[key], Soq_Final: n, Catatan: String(it.catatan || '').slice(0, 200),
+      Diubah_Oleh: s.nama || s.role, Diubah_Waktu: nowIso_() });
+  });
+  withLock_(function () {
+    var t = readTable_('Mustahiq_Final');
+    t.rows.filter(function (r) { return String(r.Tahun) === String(tahun); }).map(function (r) { return r._row; })
+      .sort(function (a, b) { return b - a; }).forEach(function (rw) { t.sh.deleteRow(rw); });
+    appendObjects_('Mustahiq_Final', baris);
+    log_(s, 'simpanFinalMustahiq', { tahun: tahun, n: baris.length, total: baris.reduce(function (a, b) { return a + b.Soq_Final; }, 0) });
+  });
+  return daftarMustahiq_({ tahun: tahun }, s);
 }

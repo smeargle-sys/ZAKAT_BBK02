@@ -48,6 +48,8 @@ var SHEETS = {
   // Mustahiq zakat fitrah (D-35): 1 baris per jiwa sensus / per penerima luar sensus (Jiwa >= 1)
   Mustahiq: ['ID', 'Tahun', 'Tipe', 'Ref_ID', 'Nama', 'ID_Keluarga', 'Nama_KK', 'Jiwa', 'Asnaf', 'Catatan', 'Dihapus', 'Dibuat_Oleh', 'Dibuat_Waktu', 'Diubah_Oleh', 'Diubah_Waktu'],
   Mustahiq_Serah: ['ID', 'Tahun', 'ID_Keluarga', 'Nama_KK', 'Soq', 'Kg', 'Tanggal', 'Oleh', 'Catatan', 'Dihapus'],
+  // Angka final hasil musyawarah per KK penerima (D-42). Tidak ada baris = pakai angka acuan.
+  Mustahiq_Final: ['Tahun', 'ID_Keluarga', 'Nama_KK', 'Soq_Final', 'Catatan', 'Diubah_Oleh', 'Diubah_Waktu'],
   Serah_UB: ['ID', 'Tahun', 'Tanggal', 'ID_Amil', 'Nama_Amil', 'Nominal', 'Penerima', 'Catatan', 'Oleh', 'Dihapus'],
   Bagian_Amil: ['Tahun', 'Lampiran', 'ID_Amil', 'Nama', 'Beras_Final_Soq', 'Uang_Final_Rp', 'Catatan', 'Diubah'],
   Impor_Review: ['Tahun', 'Sumber_Sheet', 'Baris', 'Nama_Asli', 'Jiwa_JM', 'Jiwa_SM', 'Status', 'Skor', 'Saran_ID_Keluarga', 'Saran_Nama',

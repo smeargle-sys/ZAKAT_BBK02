@@ -56,6 +56,11 @@ Skema resmi ada di `SHEETS` di `apps-script/00_Config.gs`. Tabel di bawah menjel
 ## Mustahiq_Serah (penyerahan per KK penerima)
 `ID, Tahun, ID_Keluarga, Nama_KK, Soq, Kg, Tanggal, Oleh, Catatan, Dihapus`. Menyimpan soq/kg **saat diserahkan**.
 
+## Mustahiq_Final (hasil musyawarah, D-42)
+`Tahun, ID_Keluarga, Nama_KK, Soq_Final, Catatan, Diubah_Oleh, Diubah_Waktu`
+- Satu baris per KK penerima yang angka finalnya diisi. Tidak ada baris = pakai angka acuan (sisa terbesar).
+- Disimpan dengan cara mengganti semua baris tahun itu. Total final boleh ≠ bagian mustahiq (selisih ditampilkan).
+
 ## Tabel pendukung
 - **Pembelian_Beras:** `ID, Tahun, Tanggal, Kg, Rupiah, Catatan, Oleh, Dihapus`
 - **Serah_UB:** `ID, Tahun, Tanggal, ID_Amil, Nama_Amil, Nominal, Penerima, Catatan, Oleh, Dihapus`

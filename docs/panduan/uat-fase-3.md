@@ -196,6 +196,21 @@ Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfiguras
   - chip baru *Daftar Mustahiq untuk Kelompok* ("NAMA MUSTAHIQ BABAKAN BARAT", per KK, pembagian desimal & pembulatan, total = bagian mustahiq);
   - *Lembar Penyerahan* tanpa teks "angka sementara".
 
+### 18. Angka final mustahiq hasil musyawarah (v1.7)
+**Persiapan:** jalankan `setupZakat` sekali (sheet `Mustahiq_Final`).
+
+- **Isi angka final:** Mustahiq › *Atur hasil musyawarah* → kolom **Soq final** bisa diisi (placeholder = angka acuan).
+  - ubah beberapa KK, isi 0 untuk satu KK;
+  - di bawah tabel, total final vs bagian mustahiq berubah langsung (pas / lebih / kurang).
+- **Simpan walau belum pas:** tersimpan, dan muncul peringatan merah di atas.
+  - kolom **Acuan** tampil di sebelah **Soq final**;
+  - KK yang diisi bertanda "musyawarah".
+- **Isi dari acuan / Kosongkan / Batal** berfungsi.
+- **Laporan untuk Kelompok:** kolom Pembulatan = angka final, dengan catatan selisih bila tidak pas.
+- **Lembar Penyerahan:** memakai angka final.
+- **Tandai diserahkan:** menyimpan angka final.
+- **Pengurus:** melihat angka final tanpa tombol *Atur hasil musyawarah*.
+
 ## Sign-Off
 
 | Role | Nama | Tanda Tangan | Tanggal |

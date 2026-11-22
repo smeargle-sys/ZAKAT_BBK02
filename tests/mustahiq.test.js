@@ -154,4 +154,28 @@ assert(!g.call({action:'cariMuzakki',token:admin,q:'Simpatisan Hapus'}).data.som
 // ---------- D-40: daftarSetoran mengirim jumlah anggota KK sensus ----------
 const ds=g.call({action:'daftarSetoran',token:admin,tahun:T}).data.filter(x=>x.kelas==='FITRAH'&&x.idKeluarga&&x.idKeluarga.indexOf('TANPA-KK-')!==0);
 assert(ds.length&&ds.every(x=>x.kkJiwa===(kel2[x.idKeluarga]||[]).length),'kkJiwa = anggota KK di sensus');
+
+// ---------- D-42: angka final hasil musyawarah per KK ----------
+let dm=g.call({action:'daftarMustahiq',token:admin,tahun:T}).data;
+assert(dm.pool>0&&dm.grup.length>=3,'butuh pool & beberapa KK');
+const [f0,f1,f2]=dm.grup;
+assert(!dm.adaFinal&&dm.selisih===0&&dm.grup.every(x=>x.final===null&&x.soq===x.acuan),'tanpa final = acuan, total pas');
+['simpanFinalMustahiq'].forEach(act=>{[a1,peng].forEach(t=>{ const x=g.call({action:act,token:t,tahun:T,items:[]}); assert(!x.ok&&/Akses ditolak/.test(x.error)); });});
+r=g.call({action:'simpanFinalMustahiq',token:admin,tahun:T,items:[{idKeluarga:f0.id,soq:1.5}]}); assert(!r.ok&&/bilangan bulat/.test(r.error));
+r=g.call({action:'simpanFinalMustahiq',token:admin,tahun:T,items:[{idKeluarga:f0.id,soq:-1}]}); assert(!r.ok);
+r=g.call({action:'simpanFinalMustahiq',token:admin,tahun:T,items:[{idKeluarga:f0.id,soq:f0.acuan+2,catatan:'musyawarah'},{idKeluarga:f1.id,soq:0},{idKeluarga:f2.id,soq:''}]}); assert(r.ok,r.error);
+dm=r.data; let x0=dm.grup.find(x=>x.id===f0.id), x1=dm.grup.find(x=>x.id===f1.id), x2=dm.grup.find(x=>x.id===f2.id);
+assert(dm.adaFinal&&x0.final===f0.acuan+2&&x0.soq===f0.acuan+2&&x0.catatanFinal==='musyawarah');
+assert(x1.final===0&&x1.soq===0,'boleh 0'); assert(x2.final===null&&x2.soq===x2.acuan,'kosong = acuan');
+assert.strictEqual(dm.totalSoq,dm.pool+2-f1.acuan); assert.strictEqual(dm.selisih,2-f1.acuan,'selisih ditampilkan, tetap boleh disimpan');
+assert.strictEqual(x0.kg,Math.round(x0.soq*dm.kgSoq*100)/100);
+// penyerahan memakai angka final
+r=g.call({action:'serahMustahiq',token:admin,tahun:T,idKeluarga:f0.id}); assert(r.ok,r.error);
+assert.strictEqual(r.data.grup.find(x=>x.id===f0.id).serah.soq,f0.acuan+2);
+// pengurus melihat angka final (baca saja)
+assert.strictEqual(g.call({action:'daftarMustahiq',token:peng,tahun:T}).data.grup.find(x=>x.id===f0.id).soq,f0.acuan+2);
+// simpan ulang mengganti semua final tahun itu
+r=g.call({action:'simpanFinalMustahiq',token:admin,tahun:T,items:[{idKeluarga:f1.id,soq:f1.acuan}]}); assert(r.ok);
+assert.strictEqual(r.data.grup.find(x=>x.id===f0.id).final,null,'final lama diganti'); assert.strictEqual(r.data.selisih,0);
+assert(r.data.grup.find(x=>x.id===f0.id).berubah,'penyerahan berbeda dari angka sekarang ditandai');
 console.log('mustahiq: lulus');
