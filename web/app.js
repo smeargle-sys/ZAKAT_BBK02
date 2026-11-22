@@ -31,7 +31,8 @@
   };
 
   // ---------- state ----------
-  var S = { token: store.get('zakat_token'), role: store.get('zakat_role'), nama: store.get('zakat_nama'), idAmil: store.get('zakat_idAmil'), boot: null, kk: null, tahun: null };
+  // zakat_tahun = tahun aktif terakhir (bukan data setoran), supaya saat refresh data halaman bisa diambil paralel dengan bootstrap
+  var S = { token: store.get('zakat_token'), role: store.get('zakat_role'), nama: store.get('zakat_nama'), idAmil: store.get('zakat_idAmil'), boot: null, kk: null, tahun: Number(store.get('zakat_tahun')) || null };
   var device = store.get('zakat_device') || (function () { var d = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36); store.set('zakat_device', d); return d; })();
   var app = $('#app');
 
@@ -46,7 +47,7 @@
           if (j.sesiHabis) { logoutLocal(); toast('Sesi berakhir, silakan masuk lagi.', true); go('#/login'); }
           throw new Error(j.error || 'Gagal');
         }
-        if (!BACA[action]) RC = {};
+        if (!BACA[action]) { Object.keys(RC).forEach(function (k) { RC[k].t = 0; }); CARI = {}; }
         return j.data;
       });
   }
@@ -59,7 +60,7 @@
   var RC = {}, SEGAR_MS = 20000;
   function rcKey(action, params) { return action + '|' + JSON.stringify(params || {}); }
   function apiCepat(action, params, onData) {
-    var k = rcKey(action, params), hit = RC[k], h0 = location.hash;
+    var k = rcKey(action, params), hit = RC[k], r0 = RUTE;
     if (hit) {
       onData(hit.data, true);
       if (Date.now() - hit.t < SEGAR_MS) return Promise.resolve(hit.data);
@@ -67,10 +68,51 @@
     return api(action, params).then(function (d) {
       var baru = JSON.stringify(d), lama = hit ? hit.s : null;
       RC[k] = { data: d, s: baru, t: Date.now() };
-      if (location.hash === h0 && baru !== lama) onData(d, false);
+      if (r0 === RUTE && baru !== lama) onData(d, false);
       return d;
     }, function (e) { if (!hit) throw e; });
   }
+  /*
+   * Penjaga perpindahan halaman: setiap navigasi menaikkan RUTE. Respons yang datang setelah
+   * pengguna pindah halaman diabaikan, supaya konten halaman lama tidak menimpa halaman baru.
+   */
+  var RUTE = 0;
+  function jaga(fn) { var r0 = RUTE; return function () { if (r0 !== RUTE) return; return fn.apply(this, arguments); }; }
+  /** Kunci semua isian di dalam root selama proses simpan, lalu buka lagi bila gagal. */
+  function sibuk(root, on) {
+    if (!root) return;
+    if (on) {
+      root._kunci = $$('input,select,textarea,button', root).filter(function (e) { return !e.disabled; });
+      root._kunci.forEach(function (e) { e.disabled = true; });
+      root.setAttribute('aria-busy', 'true');
+    } else {
+      (root._kunci || []).forEach(function (e) { e.disabled = false; });
+      root._kunci = null; root.removeAttribute('aria-busy');
+    }
+  }
+  /** Format rupiah saat mengetik (input[data-rp]): 1250000 -> 1.250.000, posisi kursor dipertahankan. */
+  document.addEventListener('input', function (e) {
+    var el = e.target;
+    if (!el || !el.hasAttribute || !el.hasAttribute('data-rp')) return;
+    var v = el.value, pos = el.selectionStart === null ? v.length : el.selectionStart;
+    var digitSebelum = v.slice(0, pos).replace(/\D/g, '').length;
+    var angka = v.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    var baru = angka ? nf(Number(angka)) : '';
+    if (baru === v) return;
+    el.value = baru;
+    var i = 0, n = 0;
+    while (i < baru.length && n < digitSebelum) { if (/\d/.test(baru[i])) n++; i++; }
+    try { el.setSelectionRange(i, i); } catch (er) { /* type tidak mendukung */ }
+  }, true);
+
+  /** Cari nama jamaah/simpatisan (cariMuzakki) dengan cache per kata kunci di memori. */
+  var CARI = {};
+  function cariNama(q) {
+    var k = String(q).toLowerCase().trim();
+    if (CARI[k]) return Promise.resolve(CARI[k]);
+    return api('cariMuzakki', { q: q }).then(function (r) { CARI[k] = r; return r; });
+  }
+
   /** Ambil ulang tanpa cache (tombol Muat ulang): lewati cache memori dan cache server. */
   function apiSegar(action, params) {
     return api(action, Object.assign({ segar: true }, params || {})).then(function (d) {
@@ -114,7 +156,7 @@
     { h: '#/amil', t: 'Input Setoran', roles: ['admin', 'amil'] },
     { h: '#/dash', t: 'Pemantauan', roles: ['admin', 'amil', 'pengurus'] },
     { h: '#/tren', t: 'Tren Tahunan', roles: ['admin', 'amil', 'pengurus'] },
-    { h: '#/setoran', t: 'Data Setoran', roles: ['admin', 'pengurus'] },
+    { h: '#/setoran', t: 'Data Setoran', roles: ['admin', 'amil', 'pengurus'] },
     { h: '#/config', t: 'Konfigurasi', roles: ['admin'] }
   ];
   function renderTop(active) {
@@ -130,12 +172,18 @@
 
   function ensureBoot(tahun) {
     if (S.boot && (!tahun || S.boot.config.Tahun === Number(tahun))) return Promise.resolve(S.boot);
-    return api('bootstrap', tahun ? { tahun: tahun } : {}).then(function (b) { S.boot = b; if (!S.tahun) S.tahun = b.tahunAktif; prefetch(); return b; });
+    if (ensureBoot._p && !tahun) return ensureBoot._p;
+    var p = api('bootstrap', tahun ? { tahun: tahun } : {}).then(function (b) {
+      S.boot = b; if (!S.tahun) S.tahun = b.tahunAktif; store.set('zakat_tahun', String(b.tahunAktif)); prefetch(); ensureBoot._p = null; return b;
+    }, function (e) { ensureBoot._p = null; throw e; });
+    if (!tahun) ensureBoot._p = p;
+    return p;
   }
 
   // ---------- router ----------
   function route() {
     var h = location.hash || '#/';
+    RUTE++;
     closeModal();
     if (!S.token && h.indexOf('#/login') !== 0) { go('#/login'); return; }
     renderTop(h);
@@ -227,13 +275,15 @@
   var AH = { filter: 'SEMUA', q: '' };
   function viewAmil() {
     if (!RC[rcKey('kkList')]) loading('Memuat daftar keluarga…');
-    ensureBoot().then(function () {
-      return apiCepat('kkList', undefined, function (d) {
+    var boot = ensureBoot();
+    apiCepat('kkList', undefined, function (d) {
+      boot.then(jaga(function () {
         S.kk = d;
         // jangan merusak ketikan di kolom cari: cukup perbarui daftarnya
         if (document.activeElement && document.activeElement.id === 'kkQ' && $('#kkList')) renderKKList(); else renderAmil();
-      });
+      }));
     }).catch(fail);
+    boot.catch(fail);
   }
   function batasInfo(b) {
     var c = b.config;
@@ -286,7 +336,7 @@
   ACT.kkFilter = function (el) { AH.filter = el.getAttribute('data-f'); renderAmil(); };
 
   // (bagian lain ditambahkan di bawah)
-  window.__Z = { $: $, $$: $$, esc: esc, nf: nf, kgf: kgf, rp: rp, rpShort: rpShort, pct: pct, parseNum: parseNum, today: today, tglId: tglId, store: store, ICON: ICON, S: S, api: api, toast: toast, fail: fail, loading: loading, go: go, openModal: openModal, closeModal: closeModal, ACT: ACT, ensureBoot: ensureBoot, apiCepat: apiCepat, apiSegar: apiSegar, batasInfo: batasInfo, app: app };
+  window.__Z = { $: $, $$: $$, esc: esc, nf: nf, kgf: kgf, rp: rp, rpShort: rpShort, pct: pct, parseNum: parseNum, today: today, tglId: tglId, store: store, ICON: ICON, S: S, api: api, toast: toast, fail: fail, loading: loading, go: go, openModal: openModal, closeModal: closeModal, ACT: ACT, ensureBoot: ensureBoot, apiCepat: apiCepat, apiSegar: apiSegar, jaga: jaga, sibuk: sibuk, cariNama: cariNama, rcKey: rcKey, RC: function () { return RC; }, batasInfo: batasInfo, app: app };
 
   // placeholder, diisi oleh app2.js
   function viewFitrah(id, q) { window.__Z.viewFitrah(id, q); }

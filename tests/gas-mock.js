@@ -19,7 +19,7 @@ module.exports=function(sensusSS,openByIdExtra){
    return f.replace('yyyy',j.getUTCFullYear()).replace('yy',String(j.getUTCFullYear()).slice(2)).replace('MM',p(j.getUTCMonth()+1)).replace('dd',p(j.getUTCDate())).replace('HH',p(j.getUTCHours())).replace('mm',p(j.getUTCMinutes())).replace('ss',p(j.getUTCSeconds())).replace(/'T'/,'T');},
    computeDigest:(a,s)=>Array.from(crypto.createHash('sha256').update(s,'utf8').digest()).map(b=>b>127?b-256:b),DigestAlgorithm:{SHA_256:1},Charset:{UTF_8:1},getUuid:()=>crypto.randomUUID()},
   SpreadsheetApp:{getActiveSpreadsheet:()=>active,getActive:()=>active,openById:(id)=>id==='1jgTL5COMzaDnvnnOTL_0DhQOlycHFaSS7HavLhR7IW0'?sensusSS:(openByIdExtra&&openByIdExtra(id)),getUi:()=>({alert(){},prompt(){},ButtonSet:{},Button:{}})},
-  CacheService:{getScriptCache:()=>({get:k=>cache.has(k)?cache.get(k):null,put:(k,v)=>cache.set(k,v),remove:k=>cache.delete(k)})},
+  CacheService:{getScriptCache:()=>({get:k=>cache.has(k)?cache.get(k):null,put:(k,v)=>{if(String(v).length>100000)throw new Error('Argument too large');cache.set(k,v)},putAll:o=>{Object.keys(o).forEach(k=>{if(String(o[k]).length>100000)throw new Error('Argument too large')});Object.keys(o).forEach(k=>cache.set(k,o[k]))},getAll:ks=>{const r={};ks.forEach(k=>{if(cache.has(k))r[k]=cache.get(k)});return r},remove:k=>cache.delete(k)})},
   PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.has(k)?props.get(k):null,setProperty:(k,v)=>props.set(k,v)})},
   LockService:{getScriptLock:()=>({waitLock(){},releaseLock(){}})},
   ContentService:{createTextOutput:s=>({s,setMimeType(){return this}}),MimeType:{JSON:'json'}},

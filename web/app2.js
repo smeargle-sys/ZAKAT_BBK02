@@ -16,7 +16,7 @@
     Promise.all(need).then(function () {
       if (q.edit) return api('getFitrah', { id: q.edit });
       return null;
-    }).then(function (ed) { initF(kkId, ed); renderF(); }).catch(Z.fail);
+    }).then(Z.jaga(function (ed) { initF(kkId, ed); renderF(); })).catch(Z.fail);
   };
   var F_smList = [];
 
@@ -131,7 +131,7 @@
     var c = S.boot.config, el = $('#fBayar');
     if (F.jenis === 'UANG') {
       el.innerHTML = '<h2 style="font-size:15px">Pembayaran titip uang</h2><div class="sum" id="fSum"></div>' +
-        '<label class="f">Uang diterima<span style="display:flex;align-items:center;gap:8px" ><span style="font-weight:600;color:var(--muted)">Rp</span><input id="fTerima" class="fi big" inputmode="numeric" value="' + (F.diterima === '' ? '' : nf(F.diterima)) + '"></span></label>' +
+        '<label class="f">Uang diterima<span style="display:flex;align-items:center;gap:8px" ><span style="font-weight:600;color:var(--muted)">Rp</span><input id="fTerima" class="fi big" inputmode="numeric" data-rp" value="' + (F.diterima === '' ? '' : nf(F.diterima)) + '"></span></label>' +
         '<div id="fSel"></div>' +
         '<fieldset id="fTujuanW" style="margin:0;border:0;padding:0;display:flex;flex-direction:column;gap:6px"><legend style="font-size:13px;font-weight:600;color:var(--ink2);padding:0 0 6px">Lebih bayar diserahkan ke</legend>' +
         '<label class="radio' + (F.tujuan === 'UB' ? ' on' : '') + '"><input type="radio" name="tujuan" value="UB"' + (F.tujuan === 'UB' ? ' checked' : '') + '>Usaha Bersama (UB)</label>' +
@@ -140,7 +140,7 @@
     } else if (F.jenis === 'BERAS') {
       el.innerHTML = '<h2 style="font-size:15px">Beras diterima</h2>' +
         '<label class="f">Berat beras (kg)<input id="fKg" class="fi big" inputmode="decimal" value="' + (F.kg === '' ? '' : String(F.kg).replace('.', ',')) + '"></label><p class="sub" style="margin:0" id="fKgHint"></p>' +
-        '<label class="f">Uang tambahan (opsional, masuk UB)<input id="fTerima" class="fi" inputmode="numeric" value="' + (F.diterima ? nf(F.diterima) : '') + '"></label>';
+        '<label class="f">Uang tambahan (opsional, masuk UB)<input id="fTerima" class="fi" inputmode="numeric" data-rp" value="' + (F.diterima ? nf(F.diterima) : '') + '"></label>';
     } else {
       el.innerHTML = '<div class="note ok">' + ICON.info + '<span>Dicatat <b>sudah zakat di kampung</b>. Tidak ada beras atau uang yang diterima amil.</span></div>';
     }
@@ -195,11 +195,34 @@
       kg: F.jenis === 'BERAS' && F.kg !== '' ? F.kg : undefined, diterima: F.jenis === 'KAMPUNG' ? 0 : Number(F.diterima) || 0,
       tujuanLebih: F.tujuan, tanggal: F.tanggal, catatan: F.catatan, idAmil: F.idAmil,
       fidyah: F.fidyah.on ? { nominal: F.fidyah.nominal, hari: Z.parseNum(F.fidyah.hari) } : null };
-    var btn = $('#fSave'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Menyimpan…';
+    var form = $('#fForm'), btn = $('#fSave');
+    Z.sibuk(form, true); btn.innerHTML = '<span class="spin"></span>Menyimpan…';
     api('simpanFitrah', body).then(function (r) {
       Z.toast('Setoran ' + nama + ' tersimpan' + (r.status === 'KURANG' ? ' (kurang bayar ' + rp(-r.selisih) + ')' : '') + '.');
-      S.kk = null; Z.go('#/amil');
-    }).catch(function (e) { btn.disabled = false; btn.textContent = F.editId ? 'Simpan perubahan' : 'Simpan setoran'; Z.fail(e); });
+      if (!F.editId) tandaiSudah(body, r);
+      Z.go('#/amil');
+    }).catch(function (e) { Z.sibuk(form, false); btn.textContent = F.editId ? 'Simpan perubahan' : 'Simpan setoran'; Z.fail(e); });
+  }
+  /**
+   * Setelah simpan berhasil, daftar KK di HP langsung ditandai "sudah" tanpa menunggu server,
+   * lalu data asli diambil di latar belakang (beranda tidak perlu "Memuat…" lagi).
+   */
+  function tandaiSudah(body, r) {
+    var rc = Z.RC()[Z.rcKey('kkList')]; if (!rc) return;
+    var d = rc.data, k = body.idKeluarga ? d.list.filter(function (x) { return x.id === body.idKeluarga; })[0] : null;
+    if (k) {
+      k.anggota.forEach(function (a) { if (body.jm.indexOf(a.id) >= 0) { a.sudah = true; a.idSetoran = r.id; } });
+      (k.simpatisan || []).forEach(function (m) { if (body.sm.indexOf(m.id) >= 0) m.sudah = true; });
+      k.sudah = k.anggota.filter(function (a) { return a.sudah; }).length;
+      if (r.status === 'KURANG') k.kurangRp = (k.kurangRp || 0) - r.selisih;
+      k.status = k.kurangRp ? 'KURANG' : k.sudah === 0 ? 'SEBAGIAN' : k.sudah < k.anggota.length ? 'SEBAGIAN' : 'SUDAH';
+    }
+    if (d.saya) {
+      if (body.idKeluarga) d.saya.kk += 1;
+      if (body.jenis !== 'KAMPUNG') d.saya.soq += body.jm.length + body.sm.length + (body.luar || 0);
+      d.saya.uang += body.diterima || 0;
+    }
+    S.kk = d;
   }
 
   // ---------- modal simpatisan (dipakai juga di Konfigurasi) ----------
@@ -226,10 +249,10 @@
         '<div class="fgrid"><label class="f">No HP (opsional)<input id="smHp" class="fi" type="tel" value="' + esc(sm.hp || '') + '"></label><label class="f">Catatan<input id="smCat" class="fi" value="' + esc(sm.catatan || '') + '"></label></div>' +
         '<div style="display:flex;gap:10px"><button type="button" class="btn" style="flex:1" data-act="close">Batal</button><button type="button" class="btn pri" style="flex:2" id="smSave">Simpan simpatisan</button></div>');
       $('#smSave').addEventListener('click', function () {
-        var b = $('#smSave'); b.disabled = true;
+        var box = $('#modal .box'); Z.sibuk(box, true);
         api('simpanSimpatisan', { sm: { id: sm.id, nama: $('#smNama').value, jk: $('#smJk').value, idKeluarga: $('#smKK').value, hubungan: $('#smHub').value, hp: $('#smHp').value, catatan: $('#smCat').value } })
           .then(function (r) { Z.closeModal(); Z.toast('Simpatisan tersimpan.'); if (after) after(r.id, r.list); })
-          .catch(function (e) { b.disabled = false; Z.fail(e); });
+          .catch(function (e) { Z.sibuk(box, false); Z.fail(e); });
       });
     };
     if (!kkList) api('kkList').then(function (d) { S.kk = d; kkList = d.list; draw(); }).catch(Z.fail); else draw();
@@ -241,10 +264,17 @@
   var M = null;
   Z.viewLain = function (q) {
     Z.loading();
-    Z.ensureBoot().then(function () {
-      M = { jenis: q.jenis === 'FIDYAH' ? 'FIDYAH' : 'MAL', q: '', hasil: [], pilih: null, namaBebas: '', nominal: '', hari: '', cara: 'Transfer', tanggal: Z.today(), catatan: '', idAmil: S.idAmil || '', lampiran: '' };
+    Promise.all([Z.ensureBoot(), q.edit ? api('getLain', { id: q.edit }) : null]).then(Z.jaga(function (r) {
+      M = { jenis: q.jenis === 'FIDYAH' ? 'FIDYAH' : 'MAL', q: '', hasil: [], pilih: null, namaBebas: '', nominal: '', hari: '', cara: 'Transfer', tanggal: Z.today(), catatan: '', idAmil: S.idAmil || '', lampiran: '', id: '', tahun: S.boot.config.Tahun };
+      var x = r[1];
+      if (x) {
+        M.id = x.ID; M.tahun = x.Tahun; M.jenis = x.Jenis; M.nominal = x.Nominal; M.hari = x.Hari_Fidyah ? String(x.Hari_Fidyah) : '';
+        M.cara = x.Cara_Bayar || 'Transfer'; M.tanggal = x.Tanggal; M.catatan = x.Catatan || ''; M.idAmil = x.ID_Amil || ''; M.lampiran = x.Lampiran || '';
+        if (x.Ref_Tipe === 'JM' || x.Ref_Tipe === 'SM') { M.pilih = { tipe: x.Ref_Tipe, id: x.Ref_ID, nama: x.Nama, idKeluarga: x.ID_Keluarga, info: x.Ref_Tipe === 'SM' ? 'Simpatisan' : 'Jamaah sensus' }; M.q = x.Nama; }
+        else M.namaBebas = x.Nama;
+      }
       renderM();
-    }).catch(Z.fail);
+    })).catch(Z.fail);
   };
   function lampiranAuto() {
     var c = S.boot.config;
@@ -256,8 +286,8 @@
     var b = S.boot, c = b.config, fid = M.jenis === 'FIDYAH';
     var color = fid ? 'pri' : 'blue';
     Z.app.innerHTML =
-      '<header class="topbar" style="position:static"><div class="in" style="max-width:560px"><button type="button" class="btn sm" data-act="go" data-h="#/amil" aria-label="Kembali" style="border:0;padding:0 6px">' + ICON.back + '</button>' +
-      '<div style="display:flex;flex-direction:column;gap:2px;flex:1"><h1 style="font-size:18px;font-weight:800">Setoran Zakat Lain</h1><span class="sub">' + esc(c.Hijriah) + (S.nama ? ' · ' + esc(S.nama) : '') + '</span></div></div></header>' +
+      '<header class="topbar" style="position:static"><div class="in" style="max-width:560px"><button type="button" class="btn sm" data-act="go" data-h="' + (M.id ? '#/setoran?tahun=' + M.tahun : '#/amil') + '" aria-label="Kembali" style="border:0;padding:0 6px">' + ICON.back + '</button>' +
+      '<div style="display:flex;flex-direction:column;gap:2px;flex:1"><h1 style="font-size:18px;font-weight:800">' + (M.id ? 'Ubah setoran' : 'Setoran Zakat Lain') + '</h1><span class="sub">' + esc(c.Hijriah) + (S.nama ? ' · ' + esc(S.nama) : '') + '</span></div></div></header>' +
       '<form id="mForm" class="wrap narrow" style="padding-top:16px;gap:14px" novalidate>' +
       '<fieldset style="margin:0;border:0;padding:0"><legend class="sr">Jenis setoran</legend><div class="seg blue" style="grid-template-columns:repeat(2,1fr)">' +
       [['MAL', 'Zakat Mal'], ['TIJAROH', 'Tijaroh'], ['MAL_TIJAROH', 'Mal + Tijaroh'], ['FIDYAH', 'Fidyah']].map(function (j) { return '<button type="button" data-act="mJenis" data-j="' + j[0] + '" aria-pressed="' + (M.jenis === j[0]) + '"' + (M.jenis === j[0] ? ' class="on"' : '') + '>' + j[1] + '</button>'; }).join('') +
@@ -266,19 +296,19 @@
       (S.role === 'admin' ? '<label class="f">Amil yang menerima<select id="mAmil" class="fi"><option value="">— tanpa amil / langsung admin —</option>' + b.amil.filter(function (a) { return a.aktif; }).map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === M.idAmil ? ' selected' : '') + '>' + esc(a.nama) + '</option>'; }).join('') + '</select></label>' : '') +
       '<section class="card pad" style="gap:12px">' +
       '<label class="f">Muzakki (jamaah sensus atau simpatisan)<span class="search">' + ICON.search + '<input id="mQ" type="search" placeholder="Ketik minimal 2 huruf…" value="' + esc(M.q) + '"></span></label>' +
-      '<div class="results" id="mRes" role="listbox" aria-label="Hasil pencarian"></div>' +
+      '<div class="results" id="mRes" role="listbox" aria-label="Hasil pencarian"></div><div id="mPilih"></div>' +
       '<label class="f">Atau tulis nama (muzakki di luar data)<input id="mNama" class="fi" value="' + esc(M.namaBebas) + '" placeholder="Opsional"></label>' +
       (fid ? '<label class="f">Jumlah hari fidyah<input id="mHari" class="fi" inputmode="numeric" value="' + esc(M.hari) + '"><span class="sub" style="font-weight:400">Tarif ' + esc(c.Hijriah) + ': ' + (c.Tarif_Fidyah ? rp(c.Tarif_Fidyah) + ' per hari' : 'belum diatur di Konfigurasi') + '</span></label>' : '') +
-      '<label class="f">' + (fid ? 'Nominal fidyah' : 'Jumlah zakat') + '<span style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;color:var(--muted)">Rp</span><input id="mNom" class="fi big" style="border-color:' + (fid ? 'var(--brand)' : 'var(--blue)') + '" inputmode="numeric" value="' + (M.nominal ? nf(M.nominal) : '') + '"></span></label>' +
+      '<label class="f">' + (fid ? 'Nominal fidyah' : 'Jumlah zakat') + '<span style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;color:var(--muted)">Rp</span><input id="mNom" data-rp class="fi big" style="border-color:' + (fid ? 'var(--brand)' : 'var(--blue)') + '" inputmode="numeric" value="' + (M.nominal ? nf(M.nominal) : '') + '"></span></label>' +
       '<div class="fgrid"><label class="f">Tanggal<input id="mTgl" type="date" class="fi" value="' + esc(M.tanggal) + '"></label>' +
       '<label class="f">Cara bayar<select id="mCara" class="fi"><option' + (M.cara === 'Transfer' ? ' selected' : '') + '>Transfer</option><option' + (M.cara === 'Tunai' ? ' selected' : '') + '>Tunai</option></select></label></div>' +
       '<label class="f">Keterangan<input id="mCat" class="fi" placeholder="Opsional" value="' + esc(M.catatan) + '"></label></section>' +
       (fid ? '<div class="note ok">' + ICON.info + '<span>Fidyah dicatat terpisah dan tidak ikut pembagian 40/45/15.</span></div>' : '<section class="card pad" style="gap:8px" id="mPrev"></section>') +
-      '<button type="submit" class="btn ' + color + ' block" id="mSave">Simpan</button></form>';
+      '<button type="submit" class="btn ' + color + ' block" id="mSave">' + (M.id ? 'Simpan perubahan' : 'Simpan') + '</button></form>';
     var on = function (id, ev, fn) { var el = $('#' + id); if (el) el.addEventListener(ev, fn); };
     var tm;
     on('mQ', 'input', function (e) { M.q = e.target.value; clearTimeout(tm); tm = setTimeout(cariM, 300); });
-    on('mNama', 'input', function (e) { M.namaBebas = e.target.value; if (M.namaBebas) { M.pilih = null; drawRes(); } });
+    on('mNama', 'input', function (e) { M.namaBebas = e.target.value; if (M.namaBebas) { M.pilih = null; M.hasil = []; drawRes(); } });
     on('mHari', 'input', function (e) { M.hari = e.target.value; var t = Number(c.Tarif_Fidyah) || 0; if (t) { M.nominal = Z.parseNum(M.hari) * t; $('#mNom').value = nf(M.nominal); } });
     on('mNom', 'input', function (e) { M.nominal = Z.parseNum(e.target.value); prevM(); });
     on('mTgl', 'change', function (e) { M.tanggal = e.target.value; lampM(); });
@@ -297,22 +327,35 @@
     var f = $('#mForceUtama'); if (f) f.addEventListener('change', function () { M.lampiran = f.checked ? 'UTAMA' : ''; });
   }
   function cariM() {
-    if ((M.q || '').trim().length < 2) { M.hasil = []; drawRes(); return; }
-    api('cariMuzakki', { q: M.q }).then(function (r) { M.hasil = r; drawRes(); }).catch(Z.fail);
+    var q = (M.q || '').trim();
+    if (q.length < 2) { M.hasil = []; M.mencari = false; drawRes(); return; }
+    M.mencari = true; drawRes();
+    Z.cariNama(q).then(function (r) {
+      if ((M.q || '').trim() !== q) return; // sudah diketik ulang: abaikan hasil lama
+      M.hasil = r; M.mencari = false; drawRes();
+    }).catch(function (e) { M.mencari = false; drawRes(); Z.fail(e); });
   }
   function drawRes() {
     var el = $('#mRes'); if (!el) return;
-    if (!M.hasil.length && !M.pilih) { el.classList.add('hidden'); return; }
+    var pil = $('#mPilih');
+    if (pil) pil.innerHTML = M.pilih && !M.hasil.length && !M.mencari ? '<div class="note ok">' + ICON.check + '<span>Terpilih: <b>' + esc(M.pilih.nama) + '</b> · ' + esc(M.pilih.info || '') + '. Ketik nama lain untuk mengganti.</span></div>' : '';
+    if (M.mencari) { el.classList.remove('hidden'); el.innerHTML = '<p class="sub" style="padding:12px;margin:0"><span class="spin"></span>Mencari nama…</p>'; return; }
+    if (!M.hasil.length) { el.classList.add('hidden'); el.innerHTML = ''; return; }
     el.classList.remove('hidden');
     var list = M.hasil.slice();
-    if (M.pilih && !list.some(function (x) { return x.id === M.pilih.id; })) list.unshift(M.pilih);
     el.innerHTML = list.map(function (x, i) {
       var on = M.pilih && M.pilih.id === x.id;
       return '<button type="button" role="option" aria-selected="' + !!on + '" class="' + (on ? 'on' : '') + '" data-act="mPick" data-i="' + i + '"><span class="nm"><b>' + esc(x.nama) + '</b><span>' + esc(x.info) + '</span></span>' + (x.tipe === 'SM' ? '<span class="chip blue">SM</span>' : '') + (on ? ICON.check : '') + '</button>';
     }).join('');
     el._list = list;
   }
-  ACT.mPick = function (el) { var list = $('#mRes')._list; M.pilih = list[Number(el.getAttribute('data-i'))]; M.namaBebas = ''; var n = $('#mNama'); if (n) n.value = ''; drawRes(); };
+  ACT.mPick = function (el) {
+    var list = $('#mRes')._list; M.pilih = list[Number(el.getAttribute('data-i'))]; M.namaBebas = '';
+    var n = $('#mNama'); if (n) n.value = '';
+    // tutup daftar setelah memilih; muncul lagi bila nama diketik ulang
+    M.hasil = []; M.q = M.pilih.nama; var qi = $('#mQ'); if (qi) qi.value = M.pilih.nama;
+    drawRes();
+  };
   ACT.mJenis = function (el) { M.jenis = el.getAttribute('data-j'); renderM(); };
   function prevM() {
     var el = $('#mPrev'); if (!el) return;
@@ -326,10 +369,11 @@
     var nama = M.pilih ? M.pilih.nama : (M.namaBebas || '').trim();
     if (!nama) { Z.toast('Pilih muzakki atau tulis namanya.', true); return; }
     if (!(M.nominal > 0)) { Z.toast('Isi nominal.', true); return; }
-    var btn = $('#mSave'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Menyimpan…';
-    api('simpanLain', { tahun: S.boot.config.Tahun, jenis: M.jenis, nama: nama, refTipe: M.pilih ? M.pilih.tipe : 'LAIN', refId: M.pilih ? M.pilih.id : '', idKeluarga: M.pilih ? M.pilih.idKeluarga : '',
+    var form = $('#mForm'), btn = $('#mSave');
+    Z.sibuk(form, true); btn.innerHTML = '<span class="spin"></span>Menyimpan…';
+    api('simpanLain', { id: M.id || undefined, tahun: M.tahun, jenis: M.jenis, nama: nama, refTipe: M.pilih ? M.pilih.tipe : 'LAIN', refId: M.pilih ? M.pilih.id : '', idKeluarga: M.pilih ? M.pilih.idKeluarga : '',
       nominal: M.nominal, hari: Z.parseNum(M.hari), caraBayar: M.cara, tanggal: M.tanggal, catatan: M.catatan, idAmil: M.idAmil, lampiran: M.lampiran || undefined })
-      .then(function (r) { Z.toast('Tersimpan' + (r.lampiran === 'SUSULAN' ? ' sebagai susulan' : '') + ': ' + nama + ' ' + rp(r.nominal) + '.'); Z.go(S.role === 'admin' ? '#/setoran' : '#/amil'); })
-      .catch(function (e) { btn.disabled = false; btn.textContent = 'Simpan'; Z.fail(e); });
+      .then(function (r) { Z.toast((M.id ? 'Perubahan tersimpan' : 'Tersimpan') + (r.lampiran === 'SUSULAN' ? ' sebagai susulan' : '') + ': ' + nama + ' ' + rp(r.nominal) + '.'); Z.go(S.role === 'admin' ? '#/setoran?tahun=' + M.tahun : '#/amil'); })
+      .catch(function (e) { Z.sibuk(form, false); btn.textContent = M.id ? 'Simpan perubahan' : 'Simpan'; Z.fail(e); });
   }
 })();

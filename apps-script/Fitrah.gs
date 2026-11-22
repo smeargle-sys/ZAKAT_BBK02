@@ -201,12 +201,25 @@ function hapusLain_(p, s) {
   });
 }
 
+/** Satu setoran zakat lain (mal/tijaroh/fidyah) untuk form ubah admin. */
+function getLain_(p) {
+  var r = rowsOf_('Zakat_Lain', function (x) { return String(x.ID) === String(p.id) && x.Dihapus !== 'Y'; })[0];
+  if (!r) throw new Error('Data tidak ditemukan.');
+  var o = cleanRow_(r);
+  o.Tahun = Number(o.Tahun); o.Tanggal = toDateStr_(o.Tanggal); o.Nominal = num_(o.Nominal);
+  return o;
+}
+
 function daftarSetoran_(p) {
   var tahun = Number(p.tahun || tahunAktif_().Tahun);
+  // nama per jiwa (D-30): Data Setoran menampilkan siapa saja yang dizakati, bukan hanya nama KK
+  var namaJiwa = {};
+  jiwaFitrah_(tahun).forEach(function (j) { var k = String(j.ID_Setoran); (namaJiwa[k] = namaJiwa[k] || []).push(String(j.Nama || '')); });
   var f = setoranFitrah_(tahun).map(function (r) {
     return { id: String(r.ID), kelas: 'FITRAH', waktu: String(r.Waktu_Input || r.Tanggal), tanggal: toDateStr_(r.Tanggal), nama: String(r.Nama_Muzakki), jenis: String(r.Jenis), idKeluarga: String(r.ID_Keluarga || ''), match: String(r.Match_Status || ''),
       jiwa: { jm: num_(r.Jiwa_JM), sm: num_(r.Jiwa_SM), luar: num_(r.Jiwa_Luar) }, kg: num_(r.Kg_Beras), wajib: num_(r.Wajib_Rp), diterima: num_(r.Diterima_Rp),
-      selisih: num_(r.Selisih_Rp), tujuan: String(r.Tujuan_Lebih || ''), status: String(r.Status_Bayar || ''), amil: String(r.Nama_Amil || ''), dicatat: String(r.Dicatat_Oleh || ''), sumber: String(r.Sumber || ''), catatan: String(r.Catatan || '') };
+      selisih: num_(r.Selisih_Rp), tujuan: String(r.Tujuan_Lebih || ''), status: String(r.Status_Bayar || ''), amil: String(r.Nama_Amil || ''), dicatat: String(r.Dicatat_Oleh || ''), sumber: String(r.Sumber || ''), catatan: String(r.Catatan || ''),
+      jiwaNama: namaJiwa[String(r.ID)] || [] };
   });
   var l = zakatLain_(tahun).map(function (r) {
     return { id: String(r.ID), kelas: 'LAIN', waktu: String(r.Waktu_Input || r.Tanggal), tanggal: toDateStr_(r.Tanggal), nama: String(r.Nama), jenis: String(r.Jenis),

@@ -18,8 +18,8 @@ function memoReset_(aktif) { REQ_MEMO_ = aktif ? {} : null; }
 function memoBuang_(name) {
   if (!REQ_MEMO_) return;
   if (name) { delete REQ_MEMO_[name]; return; }
-  var sen = REQ_MEMO_.__sensus; // sensus hanya dibaca (tidak pernah ditulis aplikasi), aman dipertahankan
-  REQ_MEMO_ = {}; if (sen) REQ_MEMO_.__sensus = sen;
+  var sen = REQ_MEMO_.__sensus, sg = REQ_MEMO_.__segar; // sensus hanya dibaca (tidak pernah ditulis aplikasi), aman dipertahankan
+  REQ_MEMO_ = {}; if (sen) REQ_MEMO_.__sensus = sen; if (sg) REQ_MEMO_.__segar = sg;
 }
 
 /** Baca sheet sebagai array objek (key = header). Tiap objek punya _row (nomor baris di sheet). */

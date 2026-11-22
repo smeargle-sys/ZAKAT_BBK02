@@ -156,6 +156,11 @@ textarea.fi{height:auto;min-height:70px;padding:10px 12px}
 @media (min-width:700px){.modal{align-items:center}}
 .modal .box{background:#fff;border-radius:22px 22px 0 0;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
 @media (min-width:700px){.modal .box{border-radius:22px}}
+/* isi modal tidak boleh menyusut (kotak hasil cari sempat terjepit di layar HP); modal yang panjang di-scroll */
+.modal .box>*{flex-shrink:0}
+/* HP: saat mengetik di modal, lembar pindah ke atas supaya hasil cari tidak tertutup keyboard */
+@media (max-width:699px){.modal:has(input:focus,textarea:focus){align-items:flex-start}.modal:has(input:focus,textarea:focus) .box{border-radius:0 0 22px 22px;max-height:85vh}}
+[aria-busy=true]{cursor:progress}
 .modal .mh{display:flex;align-items:center;gap:10px}.modal .mh h2{flex:1;font-size:19px;font-weight:800}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--dark);color:#fff;padding:12px 18px;border-radius:14px;font-weight:600;z-index:60;max-width:92vw;box-shadow:0 10px 30px rgba(0,0,0,.2)}
 .toast.err{background:var(--red)}

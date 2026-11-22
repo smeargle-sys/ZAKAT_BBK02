@@ -19,15 +19,28 @@
   // =====================================================================
   var D = null, D_belumAll = false;
   ACT.belumAll = function () { D_belumAll = !D_belumAll; renderDash(); };
+  /**
+   * Ambil data halaman bersamaan dengan bootstrap (bukan berurutan), lalu render hanya bila
+   * pengguna masih di halaman yang sama (Z.jaga).
+   */
+  function muat(action, params, onData) {
+    var boot = Z.ensureBoot();
+    var p = Z.apiCepat(action, params, function (d, dariCache) { boot.then(Z.jaga(function () { onData(d, dariCache); })); });
+    return Promise.all([boot, p]);
+  }
   /** Pembaruan dari latar belakang tidak boleh merusak isian yang sedang diketik. */
   function bolehRender() { var a = document.activeElement; return !(a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && Z.app.contains(a)); }
   Z.viewDash = function (tahun, segar) {
     Z.loading('Menghitung rekap…');
-    Z.ensureBoot().then(function () {
-      var t = Number(tahun || S.tahun || S.boot.tahunAktif);
-      var onD = function (d, dariCache) { D = d; S.tahun = d.tahun; if (dariCache || bolehRender()) renderDash(); };
-      return segar ? Z.apiSegar('dashboard', { tahun: t }).then(onD) : Z.apiCepat('dashboard', { tahun: t }, onD);
-    }).catch(Z.fail);
+    var onD = function (d, dariCache) { D = d; S.tahun = d.tahun; if (dariCache || bolehRender()) renderDash(); };
+    var t = Number(tahun || S.tahun) || 0;
+    if (segar) {
+      Z.ensureBoot().then(function () { return Z.apiSegar('dashboard', { tahun: t || S.boot.tahunAktif }); }).then(Z.jaga(onD)).catch(Z.fail);
+    } else if (t) {
+      muat('dashboard', { tahun: t }, onD).catch(Z.fail);
+    } else {
+      Z.ensureBoot().then(function () { return muat('dashboard', { tahun: S.boot.tahunAktif }, onD); }).catch(Z.fail);
+    }
   };
 
   // ---------- progres untuk jamaah (D-26) ----------
@@ -198,7 +211,7 @@
       var vB = it.beras === '' ? '' : String(it.beras).replace('.', ','), vU = it.uang === '' ? '' : nf(it.uang);
       return '<tr><td><b>' + esc(it.nama) + '</b></td><td class="r">' + nf(it.saham, 1) + '</td>' +
         (lp === 'UTAMA' ? '<td class="r num" style="color:var(--muted)">' + nf(it.hitBeras, 1) + '</td><td class="r">' + (admin ? '<input class="fi" style="width:70px;height:36px;text-align:right" inputmode="decimal" data-bag="beras" data-lp="' + lp + '" data-id="' + esc(it.idAmil) + '" value="' + esc(vB) + '" placeholder="' + nf(it.hitBeras, 1) + '" aria-label="Beras final ' + esc(it.nama) + '">' : (vB || '—')) + '</td>' : '') +
-        '<td class="r num" style="color:var(--muted)">' + nf(it.hitUang) + '</td><td class="r">' + (admin ? '<input class="fi" style="width:130px;height:36px;text-align:right" inputmode="numeric" data-bag="uang" data-lp="' + lp + '" data-id="' + esc(it.idAmil) + '" value="' + esc(vU) + '" placeholder="' + nf(it.hitUang) + '" aria-label="Uang final ' + esc(it.nama) + '">' : (vU || '—')) + '</td></tr>';
+        '<td class="r num" style="color:var(--muted)">' + nf(it.hitUang) + '</td><td class="r">' + (admin ? '<input class="fi" style="width:130px;height:36px;text-align:right" inputmode="numeric" data-rp data-bag="uang" data-lp="' + lp + '" data-id="' + esc(it.idAmil) + '" value="' + esc(vU) + '" placeholder="' + nf(it.hitUang) + '" aria-label="Uang final ' + esc(it.nama) + '">' : (vU || '—')) + '</td></tr>';
     }).join('');
     var head = '<tr><th>Amil</th><th class="r">Saham</th>' + (lp === 'UTAMA' ? '<th class="r">Beras hitungan</th><th class="r">Beras final (soq)</th>' : '') + '<th class="r">Uang hitungan</th><th class="r">Uang final (Rp)</th></tr>';
     var foot = '<div class="noprint" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 20px;background:var(--warnbg);border-radius:0 0 18px 18px;font-size:13px;color:var(--warnfg)">' +
@@ -219,9 +232,9 @@
       var ib = $('[data-bag=beras][data-lp=' + lp + '][data-id="' + it.idAmil + '"]'), iu = $('[data-bag=uang][data-lp=' + lp + '][data-id="' + it.idAmil + '"]');
       return { idAmil: it.idAmil, nama: it.nama, beras: ib ? (ib.value === '' ? it.hitBeras : String(ib.value).replace(',', '.')) : '', uang: iu.value === '' ? it.hitUang : Z.parseNum(iu.value) };
     });
-    el.disabled = true;
+    var sec = el.closest('section'); Z.sibuk(sec, true);
     api('simpanBagianAmil', { tahun: D.tahun, lampiran: lp, items: items, catatan: $('#bagCat_' + lp).value })
-      .then(function () { Z.toast('Hasil musyawarah tersimpan.'); Z.viewDash(D.tahun); }).catch(function (e) { el.disabled = false; Z.fail(e); });
+      .then(function () { Z.toast('Hasil musyawarah tersimpan.'); Z.viewDash(D.tahun); }).catch(function (e) { Z.sibuk(sec, false); Z.fail(e); });
   };
   ACT.dReload = function () { Z.viewDash(D ? D.tahun : null, true); };
 
@@ -229,30 +242,44 @@
     var admin = S.role === 'admin';
     Z.openModal('<div class="mh"><h2>Catat serah ke Usaha Bersama</h2><button type="button" class="btn sm" data-act="close" aria-label="Tutup">' + ICON.x + '</button></div>' +
       (admin ? '<label class="f">Amil yang menyerahkan<select id="ubAmil" class="fi">' + D.perAmil.filter(function (a) { return a.id !== '_'; }).map(function (a) { return '<option value="' + esc(a.id) + '">' + esc(a.nama) + ' · sisa ' + rp(a.lebihUB - a.serahUB) + '</option>'; }).join('') + '</select></label>' : '<p class="sub" style="margin:0">Amil: <b>' + esc(S.nama) + '</b></p>') +
-      '<div class="fgrid"><label class="f">Nominal (Rp)<input id="ubNom" class="fi" inputmode="numeric"></label><label class="f">Tanggal<input id="ubTgl" type="date" class="fi" value="' + Z.today() + '"></label></div>' +
+      '<div class="fgrid"><label class="f">Nominal (Rp)<input id="ubNom" class="fi" inputmode="numeric" data-rp></label><label class="f">Tanggal<input id="ubTgl" type="date" class="fi" value="' + Z.today() + '"></label></div>' +
       '<label class="f">Diterima oleh (pengurus UB)<input id="ubPen" class="fi"></label><label class="f">Catatan<input id="ubCat" class="fi" placeholder="Opsional"></label>' +
       '<button type="button" class="btn blue block" id="ubSave">Simpan serah terima</button>');
     $('#ubSave').addEventListener('click', function () {
-      var b = $('#ubSave'); b.disabled = true;
+      var box = $('#modal .box'); Z.sibuk(box, true);
       api('simpanSerahUB', { tahun: D.tahun, idAmil: admin ? $('#ubAmil').value : '', nominal: Z.parseNum($('#ubNom').value), tanggal: $('#ubTgl').value, penerima: $('#ubPen').value, catatan: $('#ubCat').value })
-        .then(function () { Z.closeModal(); Z.toast('Serah ke UB tercatat.'); Z.viewDash(D.tahun); }).catch(function (e) { b.disabled = false; Z.fail(e); });
+        .then(function () { Z.closeModal(); Z.toast('Serah ke UB tercatat.'); Z.viewDash(D.tahun); }).catch(function (e) { Z.sibuk(box, false); Z.fail(e); });
     });
   };
   ACT.beliModal = function () {
     Z.openModal('<div class="mh"><h2>Catat pembelian beras</h2><button type="button" class="btn sm" data-act="close" aria-label="Tutup">' + ICON.x + '</button></div>' +
       '<p class="sub" style="margin:0">Kebutuhan ' + kgf(D.beras.kebutuhanKg) + ' kg · sudah dibeli ' + kgf(D.beras.dibeliKg) + ' kg · sisa dana ' + rp(D.beras.sisaDana) + '</p>' +
-      '<div class="fgrid"><label class="f">Berat (kg)<input id="blKg" class="fi" inputmode="decimal"></label><label class="f">Harga total (Rp)<input id="blRp" class="fi" inputmode="numeric"></label><label class="f">Tanggal<input id="blTgl" type="date" class="fi" value="' + Z.today() + '"></label></div>' +
+      '<div class="fgrid"><label class="f">Berat (kg)<input id="blKg" class="fi" inputmode="decimal"></label><label class="f">Harga total (Rp)<input id="blRp" class="fi" inputmode="numeric" data-rp></label><label class="f">Tanggal<input id="blTgl" type="date" class="fi" value="' + Z.today() + '"></label></div>' +
       '<label class="f">Catatan<input id="blCat" class="fi" placeholder="Mis. toko, jenis beras"></label>' +
       (D.beras.list.length ? '<div class="tbl"><table><thead><tr><th>Tanggal</th><th class="r">Kg</th><th class="r">Rupiah</th><th></th></tr></thead><tbody>' + D.beras.list.map(function (x) { return '<tr><td>' + Z.tglId(x.tanggal) + '</td><td class="r">' + kgf(x.kg) + '</td><td class="r">' + rp(x.rp) + '</td><td class="r"><button type="button" class="btn sm danger" data-act="beliHapus" data-id="' + esc(x.id) + '">Hapus</button></td></tr>'; }).join('') + '</tbody></table></div>' : '') +
       '<button type="button" class="btn pri block" id="blSave">Simpan pembelian</button>');
     $('#blSave').addEventListener('click', function () {
-      var b = $('#blSave'); b.disabled = true;
+      var box = $('#modal .box'); Z.sibuk(box, true);
       api('simpanBeli', { tahun: D.tahun, kg: String($('#blKg').value).replace(',', '.'), rupiah: Z.parseNum($('#blRp').value), tanggal: $('#blTgl').value, catatan: $('#blCat').value })
-        .then(function () { Z.closeModal(); Z.toast('Pembelian beras tercatat.'); Z.viewDash(D.tahun); }).catch(function (e) { b.disabled = false; Z.fail(e); });
+        .then(function () { Z.closeModal(); Z.toast('Pembelian beras tercatat.'); Z.viewDash(D.tahun); }).catch(function (e) { Z.sibuk(box, false); Z.fail(e); });
     });
   };
   ACT.beliHapus = function (el) { if (!confirm('Hapus catatan pembelian ini?')) return; api('hapusBeli', { id: el.getAttribute('data-id') }).then(function () { Z.closeModal(); Z.viewDash(D.tahun); }).catch(Z.fail); };
 
+  /** Nama per jiwa yang dizakati; nama KK sebagai keterangan kecil. Data impor (tanpa rincian jiwa) tetap nama KK. */
+  function namaMuzakki(t) {
+    var jiwa = t.jiwaNama || [];
+    var luar = /JM luar: ([^·]+)/.exec(t.catatan || '');
+    if (!jiwa.length) return '<b>' + esc(t.nama) + '</b>';
+    var nama = jiwa.concat(luar ? [luar[1].trim() + ' (JM luar)'] : []);
+    var kk = t.idKeluarga && String(t.idKeluarga).indexOf('TANPA-KK-') !== 0 ? 'KK ' + t.nama : '';
+    return '<b>' + esc(nama.join(', ')) + '</b>' + (kk ? '<span class="sub" style="display:block;font-size:12px">' + esc(kk) + '</span>' : '');
+  }
+  function cocokCari(r, q) {
+    if (!q) return true;
+    return r.nama.toLowerCase().indexOf(q) >= 0 || (r.amil || '').toLowerCase().indexOf(q) >= 0 ||
+      (r.jiwaNama || []).some(function (n) { return n.toLowerCase().indexOf(q) >= 0; });
+  }
   function setoranTable(rows, withActions) {
     if (!rows.length) return '<p class="sub" style="padding:16px 20px;margin:0">Belum ada data.</p>';
     var admin = S.role === 'admin';
@@ -266,9 +293,10 @@
         if (withActions && admin) {
           act = '<td class="r" style="display:flex;gap:6px;justify-content:flex-end">' +
             (t.kelas === 'FITRAH' && t.sumber === 'APP' ? '<a class="btn sm" href="#/fitrah/' + encodeURIComponent(t.idKeluarga || '_sm') + '?edit=' + encodeURIComponent(t.id) + '">Ubah</a>' : '') +
+            (t.kelas === 'LAIN' ? '<a class="btn sm" href="#/lain?edit=' + encodeURIComponent(t.id) + '">Ubah</a>' : '') +
             '<button type="button" class="btn sm danger" data-act="hapusSetoran" data-id="' + esc(t.id) + '" data-kelas="' + t.kelas + '" data-nama="' + esc(t.nama) + '">Hapus</button></td>';
         }
-        return '<tr><td style="color:var(--muted)">' + esc(Z.tglId(t.tanggal)) + '</td><td><b>' + esc(t.nama) + '</b>' + (t.match && t.match !== 'COCOK' && t.match !== 'MANUAL' ? ' <span class="chip warn" title="Nama belum cocok ke sensus">cek</span>' : '') + '</td>' +
+        return '<tr><td style="color:var(--muted)">' + esc(Z.tglId(t.tanggal)) + '</td><td class="tw">' + namaMuzakki(t) + (t.match && t.match !== 'COCOK' && t.match !== 'MANUAL' ? ' <span class="chip warn" title="Nama belum cocok ke sensus">cek</span>' : '') + '</td>' +
           '<td><span class="chip ' + j[0] + '">' + j[1] + '</span></td><td>' + jiwa + '</td><td class="r num"><b>' + nilai + '</b></td><td class="r num">' + sel + '</td><td style="color:var(--ink2)">' + esc(t.amil || '—') + (t.dicatat && t.dicatat !== t.amil ? '<span class="sub" style="display:block;font-size:12px">dicatat oleh ' + esc(t.dicatat) + '</span>' : '') + '</td>' +
           (withActions ? '<td><span class="chip">' + esc(t.sumber === 'IMPOR' ? 'Impor' : 'Aplikasi') + '</span></td>' + act : '') + '</tr>';
       }).join('') + '</tbody></table></div>';
@@ -279,9 +307,7 @@
   // =====================================================================
   Z.viewTren = function () {
     Z.loading('Menyusun tren…');
-    Z.ensureBoot().then(function () {
-      return Z.apiCepat('tren', undefined, function (all) { renderTren(all.filter(function (x) { return !x.error && (x.fitrah.setoran || x.malTotal); })); });
-    }).catch(Z.fail);
+    muat('tren', undefined, function (all) { renderTren(all.filter(function (x) { return !x.error && (x.fitrah.setoran || x.malTotal); })); }).catch(Z.fail);
   };
   function delta(a, b, poin) {
     if (b === undefined || b === null) return { t: '—', up: null };
@@ -375,29 +401,29 @@
   var DS = { kelas: '', q: '', rows: [] };
   Z.viewSetoran = function (tahun) {
     Z.loading('Memuat data setoran…');
-    Z.ensureBoot().then(function () {
-      S.tahun = Number(tahun || S.tahun || S.boot.tahunAktif);
-      return Z.apiCepat('daftarSetoran', { tahun: S.tahun }, function (rows, dariCache) { DS.rows = rows; if (dariCache || bolehRender()) renderSetoran(); });
-    }).catch(Z.fail);
+    var onS = function (rows, dariCache) { DS.rows = rows; if (dariCache || bolehRender()) renderSetoran(); };
+    var t = Number(tahun || S.tahun) || 0;
+    if (t) { S.tahun = t; muat('daftarSetoran', { tahun: t }, onS).catch(Z.fail); }
+    else Z.ensureBoot().then(function () { S.tahun = S.boot.tahunAktif; return muat('daftarSetoran', { tahun: S.tahun }, onS); }).catch(Z.fail);
   };
   function renderSetoran() {
     var q = DS.q.toLowerCase();
-    var rows = DS.rows.filter(function (r) { return (!DS.kelas || r.kelas === DS.kelas || r.jenis === DS.kelas) && (!q || r.nama.toLowerCase().indexOf(q) >= 0 || (r.amil || '').toLowerCase().indexOf(q) >= 0); });
+    var rows = DS.rows.filter(function (r) { return (!DS.kelas || r.kelas === DS.kelas || r.jenis === DS.kelas) && cocokCari(r, q); });
     var perluCek = DS.rows.filter(function (r) { return r.match && r.match !== 'COCOK' && r.match !== 'MANUAL'; }).length;
-    Z.app.innerHTML = '<div class="wrap"><div class="head"><div class="t"><h1>Data Setoran</h1><p>' + DS.rows.length + ' transaksi · ' + (S.role === 'admin' ? 'admin bisa mengubah dan menghapus' : 'hanya lihat') + '</p></div>' + tahunSelect('sTahun', S.tahun) +
+    Z.app.innerHTML = '<div class="wrap"><div class="head"><div class="t"><h1>Data Setoran</h1><p>' + DS.rows.length + ' transaksi · ' + (S.role === 'admin' ? 'admin bisa mengubah dan menghapus' : 'hanya lihat, perubahan oleh admin') + '</p></div>' + tahunSelect('sTahun', S.tahun) +
       (S.role === 'admin' ? '<a class="btn pri" href="#/amil">' + ICON.plus + 'Input setoran</a>' : '') + '</div>' +
       (perluCek ? '<div class="note warn">' + ICON.info + '<span>' + perluCek + ' setoran hasil impor namanya belum cocok ke sensus (tanda <b>cek</b>). Perbaiki lewat sheet <b>Impor_Review</b> lalu menu Zakat › Terapkan hasil review impor.</span></div>' : '') +
-      '<section class="card"><div class="ch"><label class="search" style="flex:1 1 240px;height:44px">' + ICON.search + '<span class="sr">Cari</span><input id="sQ" type="search" placeholder="Cari muzakki atau amil…" value="' + esc(DS.q) + '"></label>' +
+      '<section class="card"><div class="ch"><label class="search" style="flex:1 1 240px;height:44px">' + ICON.search + '<span class="sr">Cari</span><input id="sQ" type="search" placeholder="Cari nama jiwa, KK, atau amil…" value="' + esc(DS.q) + '"></label>' +
       '<div class="filters" role="group" aria-label="Filter jenis">' + [['', 'Semua'], ['FITRAH', 'Fitrah'], ['MAL', 'Mal'], ['TIJAROH', 'Tijaroh'], ['MAL_TIJAROH', 'Campuran'], ['FIDYAH', 'Fidyah']].map(function (f) {
         return '<button type="button" data-act="sKelas" data-k="' + f[0] + '" aria-pressed="' + (DS.kelas === f[0]) + '"' + (DS.kelas === f[0] ? ' class="on"' : '') + '>' + f[1] + '</button>';
       }).join('') + '</div><button type="button" class="btn sm" data-act="sCsv">Ekspor CSV</button></div><div id="sTbl">' + setoranTable(rows, true) + '</div></section></div>';
     $('#sTahun').addEventListener('change', function (e) { Z.viewSetoran(e.target.value); });
-    var tm; $('#sQ').addEventListener('input', function (e) { DS.q = e.target.value; clearTimeout(tm); tm = setTimeout(function () { var r = DS.rows.filter(function (r) { var q = DS.q.toLowerCase(); return (!DS.kelas || r.kelas === DS.kelas || r.jenis === DS.kelas) && (!q || r.nama.toLowerCase().indexOf(q) >= 0 || (r.amil || '').toLowerCase().indexOf(q) >= 0); }); $('#sTbl').innerHTML = setoranTable(r, true); }, 200); });
+    var tm; $('#sQ').addEventListener('input', function (e) { DS.q = e.target.value; clearTimeout(tm); tm = setTimeout(function () { var r = DS.rows.filter(function (r) { return (!DS.kelas || r.kelas === DS.kelas || r.jenis === DS.kelas) && cocokCari(r, DS.q.toLowerCase()); }); $('#sTbl').innerHTML = setoranTable(r, true); }, 200); });
   }
   ACT.sKelas = function (el) { DS.kelas = el.getAttribute('data-k'); renderSetoran(); };
   ACT.sCsv = function () {
-    csv('setoran-zakat-' + S.tahun + '.csv', [['Tanggal', 'Muzakki', 'Kelas', 'Jenis', 'Lampiran', 'JM', 'SM', 'JM luar', 'Kg beras', 'Wajib (Rp)', 'Diterima/Nominal (Rp)', 'Selisih (Rp)', 'Tujuan lebih', 'Status', 'Amil', 'Dicatat oleh', 'Sumber', 'Catatan']].concat(
-      DS.rows.map(function (r) { return [r.tanggal, r.nama, r.kelas, r.jenis, r.lampiran || '', r.jiwa ? r.jiwa.jm : '', r.jiwa ? r.jiwa.sm : '', r.jiwa ? r.jiwa.luar : '', r.kg || '', r.wajib || '', r.kelas === 'FITRAH' ? r.diterima : r.nominal, r.selisih || '', r.tujuan || '', r.status || '', r.amil, r.dicatat || '', r.sumber, r.catatan]; })));
+    csv('setoran-zakat-' + S.tahun + '.csv', [['Tanggal', 'Muzakki', 'Nama jiwa', 'Kelas', 'Jenis', 'Lampiran', 'JM', 'SM', 'JM luar', 'Kg beras', 'Wajib (Rp)', 'Diterima/Nominal (Rp)', 'Selisih (Rp)', 'Tujuan lebih', 'Status', 'Amil', 'Dicatat oleh', 'Sumber', 'Catatan']].concat(
+      DS.rows.map(function (r) { return [r.tanggal, r.nama, (r.jiwaNama || []).join(', '), r.kelas, r.jenis, r.lampiran || '', r.jiwa ? r.jiwa.jm : '', r.jiwa ? r.jiwa.sm : '', r.jiwa ? r.jiwa.luar : '', r.kg || '', r.wajib || '', r.kelas === 'FITRAH' ? r.diterima : r.nominal, r.selisih || '', r.tujuan || '', r.status || '', r.amil, r.dicatat || '', r.sumber, r.catatan]; })));
   };
   ACT.hapusSetoran = function (el) {
     if (!confirm('Hapus setoran ' + el.getAttribute('data-nama') + '? Data ditandai terhapus dan tidak dihitung lagi.')) return;
@@ -412,11 +438,12 @@
   Z.viewConfig = function (tahun) {
     Z.loading('Memuat konfigurasi…');
     Promise.all([Z.ensureBoot(), api('getConfig', { tahun: tahun || S.boot && S.boot.tahunAktif }), api('daftarSimpatisan')])
-      .then(function (r) { CF = r[1]; CF.sm = r[2]; renderConfig(); }).catch(Z.fail);
+      .then(Z.jaga(function (r) { CF = r[1]; CF.sm = r[2]; renderConfig(); })).catch(Z.fail);
   };
   function renderConfig() {
     var c = CF.configs.filter(function (x) { return x.Tahun === CF.tahun; })[0] || CF.configs[CF.configs.length - 1];
-    var fld = function (k, label, hint, type) { return '<label class="f">' + label + '<input class="fi" data-cfg="' + k + '" ' + (type ? 'type="' + type + '"' : '') + ' value="' + esc(c[k] === undefined ? '' : c[k]) + '"><span class="sub" style="font-weight:400">' + hint + '</span></label>'; };
+    var RP = { Harga_Soq: 1, Tarif_Fidyah: 1 };
+    var fld = function (k, label, hint, type) { var v = c[k] === undefined ? '' : c[k]; if (RP[k] && v !== '') v = nf(v); return '<label class="f">' + label + '<input class="fi" data-cfg="' + k + '" ' + (type ? 'type="' + type + '"' : '') + (RP[k] ? ' inputmode="numeric" data-rp' : '') + ' value="' + esc(v) + '"><span class="sub" style="font-weight:400">' + hint + '</span></label>'; };
     var pctRows = function (pre, items, keKey) {
       return '<table><thead><tr><th>Pos</th><th class="r">%</th></tr></thead><tbody>' + items.map(function (it) {
         return '<tr><td><b>' + it[1] + '</b>' + (it[0] === 'Mustahiq' ? ' <select class="fi" style="width:auto;height:36px;display:inline-block;margin-left:8px" data-cfg="' + keKey + '" aria-label="Mustahiq disetor ke"><option' + (c[keKey] === 'Kelompok' ? ' selected' : '') + '>Kelompok</option><option' + (c[keKey] === 'Desa' ? ' selected' : '') + '>Desa</option><option' + (c[keKey] === 'Daerah' ? ' selected' : '') + '>Daerah</option></select>' : '') + '</td>' +
@@ -459,8 +486,8 @@
   ACT.cSave = function (el) {
     var c = { Tahun: CF._c.Tahun };
     $$('[data-cfg]').forEach(function (i) { c[i.getAttribute('data-cfg')] = i.value; });
-    el.disabled = true;
-    api('simpanConfig', { config: c }).then(function () { Z.toast('Konfigurasi ' + c.Tahun + ' tersimpan.'); S.boot = null; Z.viewConfig(c.Tahun); }).catch(function (e) { el.disabled = false; Z.fail(e); });
+    var wrap = $('#app .wrap'); Z.sibuk(wrap, true);
+    api('simpanConfig', { config: c }).then(function () { Z.toast('Konfigurasi ' + c.Tahun + ' tersimpan.'); S.boot = null; Z.viewConfig(c.Tahun); }).catch(function (e) { Z.sibuk(wrap, false); Z.fail(e); });
   };
   ACT.cTahunBaru = function () {
     var last = CF.configs[CF.configs.length - 1];
@@ -482,15 +509,17 @@
     $('#usSave').addEventListener('click', function () {
       var pin = $('#usPin').value;
       if (pin && !/^\d{6}$/.test(pin)) { Z.toast('PIN harus 6 digit angka.', true); return; }
-      var b = $('#usSave'); b.disabled = true;
+      var box = $('#modal .box'); Z.sibuk(box, true);
       api('simpanPengguna', { user: { id: i >= 0 ? u.id : '', nama: $('#usNama').value, peran: $('#usPeran').value, pin: pin, aktif: $('#usAktif').checked } })
-        .then(function (list) { CF.pengguna = list; Z.closeModal(); Z.toast('Pengguna tersimpan.'); renderConfig(); }).catch(function (e) { b.disabled = false; Z.fail(e); });
+        .then(function (list) { CF.pengguna = list; Z.closeModal(); Z.toast('Pengguna tersimpan.'); renderConfig(); }).catch(function (e) { Z.sibuk(box, false); Z.fail(e); });
     });
   };
   ACT.smEdit = function (el) {
     var i = Number(el.getAttribute('data-i')), m = i >= 0 ? CF.sm[i] : {};
     Z.smModal(m, function (id, list) { CF.sm = list; renderConfig(); });
   };
+  /** Di HP, pastikan daftar hasil tidak tertutup keyboard. */
+  function tampil(el) { try { el.scrollIntoView({ block: 'nearest' }); } catch (e) { /* browser lama */ } }
   ACT.amilModal = function (el) {
     var i = Number(el.getAttribute('data-i')), a = i >= 0 ? CF.amil[i] : { nama: '', jabatan: 'Amil', saham: 1, aktif: true, idJamaah: '' };
     var pick = a.idJamaah ? { id: a.idJamaah, nama: a.nama } : null;
@@ -503,21 +532,26 @@
       '<button type="button" class="btn pri block" id="amSave">Simpan amil</button>');
     var tm;
     $('#amQ').addEventListener('input', function (e) {
-      clearTimeout(tm); var q = e.target.value; if (q.trim().length < 2) { $('#amRes').classList.add('hidden'); return; }
+      clearTimeout(tm); var q = e.target.value.trim(), el2 = $('#amRes');
+      if (q.length < 2) { el2.classList.add('hidden'); return; }
+      el2.classList.remove('hidden'); el2.innerHTML = '<p class="sub" style="padding:12px;margin:0"><span class="spin"></span>Mencari nama di sensus…</p>';
+      tampil(el2);
       tm = setTimeout(function () {
-        api('cariMuzakki', { q: q }).then(function (r) {
-          r = r.filter(function (x) { return x.tipe === 'JM'; }); var el2 = $('#amRes'); el2.classList.toggle('hidden', !r.length);
-          el2.innerHTML = r.map(function (x, k) { return '<button type="button" data-k="' + k + '"><span class="nm"><b>' + esc(x.nama) + '</b><span>' + esc(x.info) + '</span></span></button>'; }).join('');
+        Z.cariNama(q).then(function (r) {
+          if ($('#amQ') === null || $('#amQ').value.trim() !== q) return; // sudah diketik ulang / modal ditutup
+          r = r.filter(function (x) { return x.tipe === 'JM'; });
+          el2.innerHTML = r.length ? r.map(function (x, k) { return '<button type="button" data-k="' + k + '"><span class="nm"><b>' + esc(x.nama) + '</b><span>' + esc(x.info) + '</span></span></button>'; }).join('') : '<p class="sub" style="padding:12px;margin:0">Nama tidak ditemukan di sensus.</p>';
           $$('button', el2).forEach(function (b) { b.addEventListener('click', function () { var x = r[Number(b.getAttribute('data-k'))]; pick = x; $('#amNama').value = x.nama; $('#amQ').value = x.nama; el2.classList.add('hidden'); }); });
-        }).catch(Z.fail);
+          tampil(el2);
+        }).catch(function (er) { el2.classList.add('hidden'); Z.fail(er); });
       }, 300);
     });
     $('#amSave').addEventListener('click', function () {
       var pin = $('#amPin').value;
       if (pin && !/^\d{6}$/.test(pin)) { Z.toast('PIN harus 6 digit angka.', true); return; }
-      var b = $('#amSave'); b.disabled = true;
+      var box = $('#modal .box'); Z.sibuk(box, true);
       api('simpanAmil', { tahun: CF.tahun, amil: { id: i >= 0 ? a.id : '', nama: $('#amNama').value, idJamaah: pick ? pick.id : '', jabatan: $('#amJab').value, saham: String($('#amSaham').value).replace(',', '.'), aktif: $('#amAktif').checked, pin: pin } })
-        .then(function (list) { CF.amil = list; Z.closeModal(); Z.toast('Amil tersimpan.'); S.boot = null; renderConfig(); }).catch(function (e) { b.disabled = false; Z.fail(e); });
+        .then(function (list) { CF.amil = list; Z.closeModal(); Z.toast('Amil tersimpan.'); S.boot = null; renderConfig(); }).catch(function (e) { Z.sibuk(box, false); Z.fail(e); });
     });
   };
 })();

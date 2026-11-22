@@ -118,6 +118,22 @@ Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfiguras
 - **Kesegaran setelah simpan:** simpan setoran di HP amil → di laptop admin tekan *Muat ulang* di Pemantauan → angka langsung bertambah.
 - **Catat waktu tunggu pertama kali** membuka Pemantauan dan Tren (detik), untuk laporan.
 
+### 14. Perbaikan temuan UAT v1.3
+- **Pindah halaman saat memuat:** buka Konfigurasi, lalu sebelum selesai memuat langsung pilih Data Setoran. Yang tampil harus tetap Data Setoran.
+- **Data Setoran:**
+  - login sebagai **amil**: menu Data Setoran ada, tanpa tombol Ubah/Hapus;
+  - kolom Muzakki berisi nama per jiwa, dengan "KK …" di bawahnya;
+  - cari dengan nama anggota (bukan nama KK) harus ketemu.
+- **Ubah Mal/Fidyah (admin):** Data Setoran → filter Fidyah → Ubah → ganti nominal → Simpan perubahan.
+- **Format rupiah:** ketik 1250000 di nominal → tampil 1.250.000.
+- **Cari nama:**
+  - saat mengetik muncul "Mencari nama…";
+  - setelah nama dipilih, daftar tertutup dan tampil "Terpilih: …";
+  - mengetik ulang memunculkan daftar lagi.
+- **Tambah amil di HP:** Konfigurasi → Tambah amil → ketik nama → daftar hasil terlihat utuh (tidak tertutup keyboard atau terpotong).
+- **Simpan:** saat tombol menampilkan "Menyimpan…", semua isian tidak bisa diubah.
+- **Refresh:** catat waktu buka pertama Pemantauan setelah refresh browser (target ≤ 4–5 detik). Jika **pemanas cache** dipasang (editor › Triggers › `hangatkanCache` tiap 10 menit), pembukaan pertama di pagi hari juga cepat.
+
 ## Hasil yang Diharapkan
 
 **Sukses UAT jika:**

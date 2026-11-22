@@ -1,7 +1,14 @@
-/** Baca data sensus (read-only) dari spreadsheet SENSUS BBK02. Di-cache 5 menit. */
+/**
+ * Baca data sensus (read-only) dari spreadsheet SENSUS BBK02.
+ * Di-cache SENSUS_CACHE_DETIK dan dipecah per ±90 KB (batas CacheService 100 KB per key),
+ * supaya sensus besar tetap ter-cache dan spreadsheet sensus tidak dibuka di setiap request.
+ * Tombol "Muat ulang" (p.segar) memaksa baca ulang.
+ */
+var SENSUS_CACHE_DETIK = 1800;
 
 function readSensus_(force) {
   // dalam satu request web, sensus cukup dibuka/diurai sekali
+  if (REQ_MEMO_ && REQ_MEMO_.__segar && !REQ_MEMO_.__sensusSegar) { force = true; REQ_MEMO_.__sensusSegar = true; }
   if (!force && REQ_MEMO_ && REQ_MEMO_.__sensus) return REQ_MEMO_.__sensus;
   var out = bacaSensus_(force);
   if (REQ_MEMO_) REQ_MEMO_.__sensus = out;
@@ -11,7 +18,7 @@ function readSensus_(force) {
 function bacaSensus_(force) {
   var cache = CacheService.getScriptCache();
   if (!force) {
-    var c = cache.get('sensus_v1');
+    var c = cacheAmbilBesar_(cache, 'sensus_v2');
     if (c) return JSON.parse(c);
   }
   var ss = SpreadsheetApp.openById(APP.SENSUS_ID);
@@ -38,8 +45,29 @@ function bacaSensus_(force) {
     };
   });
   var out = { keluarga: keluarga, jamaah: jamaah, waktu: nowIso_() };
-  try { cache.put('sensus_v1', JSON.stringify(out), 300); } catch (e) { /* >100KB: lewati cache */ }
+  cacheSimpanBesar_(cache, 'sensus_v2', JSON.stringify(out), SENSUS_CACHE_DETIK);
   return out;
+}
+
+/** Simpan string panjang ke CacheService dalam beberapa potongan. Gagal = diam (cache opsional). */
+function cacheSimpanBesar_(cache, key, str, detik) {
+  try {
+    var n = Math.ceil(str.length / 90000), obj = {};
+    if (n > 20) return; // >1,8 MB: terlalu besar, jangan di-cache
+    for (var i = 0; i < n; i++) obj[key + '_' + i] = str.substr(i * 90000, 90000);
+    obj[key + '_n'] = String(n);
+    cache.putAll(obj, detik);
+  } catch (e) { /* cache opsional */ }
+}
+function cacheAmbilBesar_(cache, key) {
+  try {
+    var n = Number(cache.get(key + '_n'));
+    if (!n) return null;
+    var keys = []; for (var i = 0; i < n; i++) keys.push(key + '_' + i);
+    var got = cache.getAll(keys), out = '';
+    for (var j = 0; j < n; j++) { if (got[keys[j]] === undefined || got[keys[j]] === null) return null; out += got[keys[j]]; }
+    return out;
+  } catch (e) { return null; }
 }
 
 /** Jamaah yang sudah diarsip (pindah/wafat) — hanya untuk mencocokkan nama data lama. */

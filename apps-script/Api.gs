@@ -27,6 +27,7 @@ function routes_() { return {
   simpanFitrah:      { roles: ['admin', 'amil'], fn: simpanFitrah_ },
   hapusFitrah:       { roles: ['admin'], fn: hapusFitrah_ },
   getFitrah:         { roles: ['admin', 'amil'], fn: getFitrah_ },
+  getLain:           { roles: ['admin'], fn: getLain_ },
   simpanLain:        { roles: ['admin', 'amil'], fn: simpanLain_ },
   hapusLain:         { roles: ['admin'], fn: hapusLain_ },
   daftarSimpatisan:  { roles: ['admin', 'amil'], fn: daftarSimpatisan_ },
@@ -57,6 +58,7 @@ function handle_(p) {
       sess = session_(p.token);
       if (r.roles.length) requireRole_(sess, r.roles);
     }
+    if (p.segar) REQ_MEMO_.__segar = true; // tombol Muat ulang: baca ulang sensus juga
     var ck = kunciCache_(p, sess);
     if (ck) {
       var hit = cacheAmbil_(ck);

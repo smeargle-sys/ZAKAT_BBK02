@@ -12,6 +12,24 @@ function onOpen() {
     .addToUi();
 }
 
+/**
+ * Pemanas cache (opsional, D-32): menyegarkan cache sensus dan menghitung ulang Pemantauan & Tren
+ * tahun aktif, supaya pembukaan pertama di HP tidak menunggu perhitungan.
+ * Cara pasang (sekali, tanpa izin tambahan): editor Apps Script › Triggers (ikon jam) › Add Trigger ›
+ * function hangatkanCache · Time-driven · Minutes timer · Every 10 minutes.
+ * Sengaja tidak memakai ScriptApp.newTrigger: itu menambah izin baru yang bisa membuat Web App
+ * gagal sampai pemilik menyetujui ulang.
+ */
+function hangatkanCache() {
+  memoReset_(true);
+  try {
+    readSensus_(true);
+    var ver = versiData_(), tahun = String(tahunAktif_().Tahun);
+    cacheSimpan_(['r', 'dashboard', ver, tahun, '', ''].join('|'), JSON.stringify(dashboard_({ tahun: tahun })));
+    cacheSimpan_(['r', 'tren', ver, '', '', ''].join('|'), JSON.stringify(tren_()));
+  } finally { memoReset_(false); }
+}
+
 function setupZakat() {
   var ss = ss_();
   Object.keys(SHEETS).forEach(function (name) {
