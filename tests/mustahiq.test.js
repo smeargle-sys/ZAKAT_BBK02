@@ -201,4 +201,14 @@ assert(r.data.grup.find(x=>x.id===f0.id).berubah,'penyerahan berbeda dari angka 
   const ah=gk5.anggota.find(a=>a.refId===hilang.id); assert(ah&&ah.tidakDiSensus,'jamaah yang tidak ada lagi di sensus ditandai');
   assert.strictEqual(x.data.grup.reduce((s,q)=>s+q.jiwa,0),kel5.length,'total jiwa tetap');
 }
+
+// ---------- D-44: tahun ditutup = konfigurasi & amil hanya-baca ----------
+assert.strictEqual(g.cfg_(T).Status,'TUTUP','2027 sudah ditutup oleh tahun baru');
+const cfgLengkap=Object.assign({},g.cfg_(T),{Harga_Soq:99000});
+r=g.call({action:'simpanConfig',token:admin,config:cfgLengkap}); assert(!r.ok&&/sudah ditutup/.test(r.error),'ubah harga tahun ditutup ditolak');
+r=g.call({action:'simpanAmil',token:admin,tahun:T,amil:{nama:'Amil Baru Fiktif',saham:1}}); assert(!r.ok&&/sudah ditutup/.test(r.error),'ubah amil tahun ditutup ditolak');
+r=g.call({action:'simpanPenandatangan',token:admin,tahun:T,list:[{jabatan:'KI KELOMPOK',nama:'Tetap Boleh'}]}); assert(r.ok,'penandatangan tetap boleh diubah: '+r.error);
+r=g.call({action:'simpanConfig',token:admin,config:Object.assign({},cfgLengkap,{Status:'BUKA'})}); assert(r.ok,r.error);
+assert.strictEqual(g.cfg_(T).Status,'BUKA','buka kembali berhasil'); assert.notStrictEqual(g.cfg_(T).Harga_Soq,99000,'membuka kembali tidak ikut mengubah harga');
+r=g.call({action:'simpanAmil',token:admin,tahun:T,amil:{nama:'Amil Baru Fiktif',saham:1}}); assert(r.ok,'setelah dibuka, amil bisa diubah: '+r.error);
 console.log('mustahiq: lulus');

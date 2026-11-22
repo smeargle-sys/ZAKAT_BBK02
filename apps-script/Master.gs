@@ -59,6 +59,8 @@ function simpanAmil_(p, s) {
   if (!a.nama) throw new Error('Nama amil wajib diisi.');
   var tahun = Number(p.tahun || tahunAktif_().Tahun);
   if (a.pin && !validPin_(a.pin)) throw new Error('PIN amil harus 6 digit angka.');
+  var ct = cfg_(tahun);
+  if (String(ct.Status).toUpperCase() !== 'BUKA') throw new Error('Daftar amil ' + ct.Hijriah + ' / ' + tahun + ' sudah ditutup dan tidak bisa diubah. Buka kembali penerimaan dulu bila perlu mengubahnya.');
   return withLock_(function () {
     var t = readTable_('Amil');
     var row = a.id ? t.rows.filter(function (r) { return String(r.ID_Amil) === String(a.id) && String(r.Tahun) === String(tahun); })[0] : null;
@@ -84,6 +86,18 @@ function getConfigAdmin_(p) {
 function simpanConfig_(p, s) {
   var c = p.config || {};
   var tahun = Number(c.Tahun);
+  // D-44: tahun yang ditutup hanya-baca. Satu-satunya perubahan yang diterima: membuka kembali (Status = BUKA).
+  var lama = configs_().filter(function (x) { return String(x.Tahun) === String(tahun); })[0];
+  if (lama && String(lama.Status).toUpperCase() !== 'BUKA') {
+    if (String(c.Status || '').toUpperCase() !== 'BUKA') throw new Error('Konfigurasi ' + lama.Hijriah + ' / ' + tahun + ' sudah ditutup dan tidak bisa diubah. Buka kembali penerimaan dulu bila perlu mengubahnya.');
+    return withLock_(function () {
+      var t = readTable_('Config_Tahun');
+      var row = t.rows.filter(function (r) { return String(r.Tahun) === String(tahun); })[0];
+      updateObject_(t, row, { Status: 'BUKA' });
+      log_(s, 'bukaKembaliTahun', { tahun: tahun });
+      return configs_();
+    });
+  }
   var sumF = ['F_Sabilillah', 'F_Mustahiq', 'F_AmilKlp', 'F_AmilDesa', 'F_AmilDaerah'].reduce(function (a, k) { return a + num_(c[k]); }, 0);
   var sumM = ['M_Sabilillah', 'M_Mustahiq', 'M_AmilKlp', 'M_AmilDesa', 'M_AmilDaerah'].reduce(function (a, k) { return a + num_(c[k]); }, 0);
   if (Math.abs(sumF - 100) > 0.001) throw new Error('Total persentase zakat fitrah harus 100% (sekarang ' + sumF + '%).');

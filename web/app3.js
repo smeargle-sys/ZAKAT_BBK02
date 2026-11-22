@@ -453,23 +453,26 @@
       }).join('') + '<tr class="tot"><td>Total</td><td class="r" id="sum_' + pre + '"></td></tr></tbody></table>';
     };
     var pos = [['Sabilillah', 'Sabilillah Daerah'], ['Mustahiq', 'Mustahiq'], ['AmilKlp', 'Amil Kelompok'], ['AmilDesa', 'Amil Desa'], ['AmilDaerah', 'Amil Daerah']];
+    var tutup = String(c.Status).toUpperCase() !== 'BUKA'; // D-44: tahun ditutup = hanya-baca
     Z.app.innerHTML = '<div class="wrap"><div class="head"><div class="t"><h1>Konfigurasi</h1><p>Pengaturan per tahun. Data KK &amp; jamaah selalu dibaca langsung dari SENSUS BBK02.</p></div>' +
       '<label class="f" style="font-size:12px;color:var(--muted)">Tahun<select id="cTahun" class="fi" style="height:44px;font-weight:600">' + CF.configs.slice().reverse().map(function (x) { return '<option value="' + x.Tahun + '"' + (x.Tahun === c.Tahun ? ' selected' : '') + '>' + esc(x.Hijriah) + ' / ' + x.Tahun + ' · ' + x.Status + '</option>'; }).join('') + '</select></label>' +
       '<button type="button" class="btn" data-act="cTahunBaru">+ Tahun baru (salin dari tahun terakhir)</button></div>' +
       '<section class="card pad"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px"><h2 style="flex:1">Tahun &amp; harga · ' + esc(c.Hijriah) + '</h2>' +
-      '<label class="f" style="flex-direction:row;align-items:center;gap:8px">Status<select class="fi" style="width:auto;height:40px" data-cfg="Status"><option value="BUKA"' + (c.Status === 'BUKA' ? ' selected' : '') + '>Penerimaan dibuka</option><option value="TUTUP"' + (c.Status === 'TUTUP' ? ' selected' : '') + '>Ditutup</option></select></label></div>' +
+      (tutup ? '<span class="chip">Penerimaan ditutup</span><button type="button" class="btn sm" data-act="cBuka">Buka kembali penerimaan</button></div>' +
+        '<div class="note warn">' + ICON.info + '<span><b>' + esc(c.Hijriah) + ' / ' + c.Tahun + ' sudah ditutup.</b> Pengaturan tahun, harga, persentase, dan amil hanya bisa dilihat. Tekan <b>Buka kembali penerimaan</b> bila memang perlu mengubahnya (lalu tutup lagi). Penandatangan laporan tetap bisa diubah.</span></div>'
+        : '<label class="f" style="flex-direction:row;align-items:center;gap:8px">Status<select class="fi" style="width:auto;height:40px" data-cfg="Status"><option value="BUKA" selected>Penerimaan dibuka</option><option value="TUTUP">Ditutup</option></select></label></div>') +
       '<div class="fgrid">' + fld('Hijriah', 'Tahun Hijriah', 'Untuk judul laporan') + fld('Tgl_Idul_Fitri', 'Tanggal Idul Fitri', 'Dasar hitungan H-n di dashboard', 'date') +
       fld('Batas_Fitrah', 'Batas setor zakat fitrah', 'Format 2027-03-10 06:00 · sebelum shalat Ied, setelahnya form fitrah terkunci') + fld('Tutup_Rekap_Mal', 'Tutup rekap zakat mal', 'Setoran mal setelah tanggal ini = Susulan', 'date') +
-      fld('Harga_Soq', 'Harga titip beras per soq (Rp)', 'Dikali jumlah jiwa untuk titip uang') + fld('Kg_Per_Soq', 'Berat 1 soq (kg)', 'Konversi soq ke kg') + fld('Tarif_Fidyah', 'Tarif fidyah per hari (Rp)', 'Bisa berbeda tiap tahun') + fld('Jiwa_Mustahiq', 'Jumlah jiwa mustahiq', 'Sementara diisi manual (fitur mustahiq di backlog)') + '</div>' +
+      fld('Harga_Soq', 'Harga titip beras per soq (Rp)', 'Dikali jumlah jiwa untuk titip uang') + fld('Kg_Per_Soq', 'Berat 1 soq (kg)', 'Konversi soq ke kg') + fld('Tarif_Fidyah', 'Tarif fidyah per hari (Rp)', 'Bisa berbeda tiap tahun') + fld('Jiwa_Mustahiq', 'Jumlah jiwa mustahiq', 'Hanya untuk tahun tanpa daftar mustahiq (2024–2026); tahun dengan daftar dihitung otomatis') + '</div>' +
       '<label class="f">Catatan<input class="fi" data-cfg="Catatan" value="' + esc(c.Catatan || '') + '"></label></section>' +
       '<div class="grid g2"><section class="card pad"><div><h2>Pembagian zakat fitrah</h2><span class="sub">Dalam soq beras, dibulatkan otomatis</span></div>' + pctRows('F_', pos, 'F_Mustahiq_Ke') + '</section>' +
       '<section class="card pad"><div><h2>Pembagian zakat mal &amp; tijaroh</h2><span class="sub">Dalam rupiah · berlaku juga untuk susulan</span></div>' + pctRows('M_', pos, 'M_Mustahiq_Ke') + '</section></div>' +
-      '<button type="button" class="btn pri block" data-act="cSave" style="max-width:360px">Simpan konfigurasi ' + c.Tahun + '</button>' +
+      (tutup ? '' : '<button type="button" class="btn pri block" data-act="cSave" style="max-width:360px">Simpan konfigurasi ' + c.Tahun + '</button>') +
 
       card('Amil ' + esc(c.Hijriah), 'Saham dipakai untuk menghitung bagian amil kelompok · PIN pribadi dipakai amil untuk login (nama dikenali dari PIN)', '<div class="tbl"><table><thead><tr><th>Nama amil</th><th>Jabatan</th><th class="r">Saham</th><th>PIN login</th><th>Status</th><th></th></tr></thead><tbody>' +
-        CF.amil.map(function (a, i) { return '<tr><td><b>' + esc(a.nama) + '</b>' + (a.idJamaah ? '' : ' <span class="chip warn" title="Belum terhubung ke data sensus">belum ke sensus</span>') + '</td><td>' + esc(a.jabatan) + '</td><td class="r">' + nf(a.saham, 1) + '</td><td>' + (a.punyaPin ? '<span class="chip ok">Sudah diatur</span>' : '<span class="chip red">Belum ada PIN</span>') + '</td><td>' + (a.aktif ? '<span class="chip ok">Aktif</span>' : '<span class="chip">Nonaktif</span>') + '</td><td class="r"><button type="button" class="btn sm" data-act="amilModal" data-i="' + i + '">Ubah</button></td></tr>'; }).join('') +
+        CF.amil.map(function (a, i) { return '<tr><td><b>' + esc(a.nama) + '</b>' + (a.idJamaah ? '' : ' <span class="chip warn" title="Belum terhubung ke data sensus">belum ke sensus</span>') + '</td><td>' + esc(a.jabatan) + '</td><td class="r">' + nf(a.saham, 1) + '</td><td>' + (a.punyaPin ? '<span class="chip ok">Sudah diatur</span>' : '<span class="chip red">Belum ada PIN</span>') + '</td><td>' + (a.aktif ? '<span class="chip ok">Aktif</span>' : '<span class="chip">Nonaktif</span>') + '</td><td class="r">' + (tutup ? '' : '<button type="button" class="btn sm" data-act="amilModal" data-i="' + i + '">Ubah</button>') + '</td></tr>'; }).join('') +
         '</tbody></table></div><div class="foot">' + CF.amil.filter(function (a) { return a.aktif; }).length + ' amil aktif · total ' + nf(CF.amil.filter(function (a) { return a.aktif; }).reduce(function (s, a) { return s + a.saham; }, 0), 1) + ' saham</div>',
-        '<button type="button" class="btn pri sm" data-act="amilModal" data-i="-1">' + ICON.plus + 'Tambah amil</button>') +
+        tutup ? '' : '<button type="button" class="btn pri sm" data-act="amilModal" data-i="-1">' + ICON.plus + 'Tambah amil</button>') +
 
       card('Master simpatisan', 'Berlaku lintas tahun · boleh terkait ke KK sensus atau berdiri sendiri', '<div class="tbl"><table><thead><tr><th>Nama</th><th>L/P</th><th>Terkait KK sensus</th><th>Hubungan</th><th></th></tr></thead><tbody>' +
         (CF.sm.length ? CF.sm.map(function (m, i) { return '<tr><td><b>' + esc(m.nama) + '</b></td><td>' + esc(m.jk || '—') + '</td><td><span class="chip ' + (m.kkNama ? 'mint' : 'blue') + '">' + esc(m.kkNama ? 'KK ' + m.kkNama : 'Berdiri sendiri') + '</span></td><td>' + esc(m.hubungan || '—') + '</td><td class="r"><button type="button" class="btn sm" data-act="smEdit" data-i="' + i + '">Ubah</button></td></tr>'; }).join('') : '<tr><td colspan="5" class="sub">Belum ada simpatisan.</td></tr>') +
@@ -484,6 +487,7 @@
     $('#cTahun').addEventListener('change', function (e) { Z.viewConfig(Number(e.target.value)); });
     var upSum = function () { ['F_', 'M_'].forEach(function (pre) { var s = 0; $$('[data-sum="' + pre + '"]').forEach(function (i) { s += Number(String(i.value).replace(',', '.')) || 0; }); var el = $('#sum_' + pre); el.textContent = nf(s, 1) + '%'; el.style.color = Math.abs(s - 100) < 0.001 ? 'var(--mintfg)' : 'var(--red)'; }); };
     $$('[data-sum]').forEach(function (i) { i.addEventListener('input', upSum); }); upSum();
+    if (tutup) $$('[data-cfg],[data-sum]').forEach(function (i) { i.disabled = true; });
     CF._c = c;
   }
   ACT.cSave = function (el) {
@@ -491,6 +495,14 @@
     $$('[data-cfg]').forEach(function (i) { c[i.getAttribute('data-cfg')] = i.value; });
     var wrap = $('#app .wrap'); Z.sibuk(wrap, true);
     api('simpanConfig', { config: c }).then(function () { Z.toast('Konfigurasi ' + c.Tahun + ' tersimpan.'); S.boot = null; Z.viewConfig(c.Tahun); }).catch(function (e) { Z.sibuk(wrap, false); Z.fail(e); });
+  };
+  ACT.cBuka = function (el) {
+    var c = CF._c;
+    if (!confirm('Buka kembali penerimaan ' + c.Hijriah + ' / ' + c.Tahun + '? Pengaturan bisa diubah lagi; jangan lupa menutupnya kembali setelah selesai.')) return;
+    el.disabled = true;
+    api('simpanConfig', { config: { Tahun: c.Tahun, Status: 'BUKA' } })
+      .then(function () { Z.toast('Penerimaan ' + c.Tahun + ' dibuka kembali.'); S.boot = null; Z.viewConfig(c.Tahun); })
+      .catch(function (e) { el.disabled = false; Z.fail(e); });
   };
   ACT.cTahunBaru = function () {
     var last = CF.configs[CF.configs.length - 1];
