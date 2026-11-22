@@ -25,7 +25,8 @@ function hangatkanCache() {
   try {
     readSensus_(true);
     var ver = versiData_(), tahun = String(tahunAktif_().Tahun);
-    cacheSimpan_(['r', 'dashboard', ver, tahun, '', ''].join('|'), JSON.stringify(dashboard_({ tahun: tahun })));
+    cacheSimpan_(['r', 'dashboard', ver, tahun, '', 'umum'].join('|'), JSON.stringify(dashboard_({ tahun: tahun }, null)));
+    cacheSimpan_(['r', 'dashboard', ver, tahun, '', 'admin'].join('|'), JSON.stringify(dashboard_({ tahun: tahun }, { role: 'admin' })));
     cacheSimpan_(['r', 'tren', ver, '', '', ''].join('|'), JSON.stringify(tren_()));
   } finally { memoReset_(false); }
 }

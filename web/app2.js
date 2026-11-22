@@ -108,7 +108,7 @@
 
   function smPicker() {
     return '<section class="card pad" style="gap:10px"><h2 style="font-size:15px">Simpatisan yang menyetor</h2>' +
-      '<label class="search">' + ICON.search + '<span class="sr">Cari simpatisan</span><input id="smQ" type="search" placeholder="Cari nama simpatisan…" value="' + esc(F.smQ) + '"></label>' +
+      '<label class="search">' + ICON.search + '<span class="sr">Cari simpatisan</span><input id="smQ" type="search" placeholder="Cari nama simpatisan…" value="' + esc(F.smQ) + '"><button type="button" class="clr" data-act="hapusCari" aria-label="Hapus pencarian">' + ICON.x + '</button></label>' +
       '<div class="results" id="smRes"></div>' +
       '<button type="button" class="btn" style="border-style:dashed" data-act="smBaru" data-kk="">' + ICON.plus + 'Simpatisan baru</button>' +
       '<p class="sub" style="margin:0">Untuk simpatisan yang berdiri sendiri. Simpatisan yang terkait keluarga sensus dicatat lewat KK-nya.</p></section>';
@@ -295,7 +295,7 @@
       '<div id="mLamp"></div>' +
       (S.role === 'admin' ? '<label class="f">Amil yang menerima<select id="mAmil" class="fi"><option value="">— tanpa amil / langsung admin —</option>' + b.amil.filter(function (a) { return a.aktif; }).map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === M.idAmil ? ' selected' : '') + '>' + esc(a.nama) + '</option>'; }).join('') + '</select></label>' : '') +
       '<section class="card pad" style="gap:12px">' +
-      '<label class="f">Muzakki (jamaah sensus atau simpatisan)<span class="search">' + ICON.search + '<input id="mQ" type="search" placeholder="Ketik minimal 2 huruf…" value="' + esc(M.q) + '"></span></label>' +
+      '<label class="f">Muzakki (jamaah sensus atau simpatisan)<span class="search">' + ICON.search + '<input id="mQ" type="search" placeholder="Ketik minimal 2 huruf…" value="' + esc(M.q) + '"><button type="button" class="clr" data-act="hapusCari" aria-label="Hapus pencarian">' + ICON.x + '</button></span></label>' +
       '<div class="results" id="mRes" role="listbox" aria-label="Hasil pencarian"></div><div id="mPilih"></div>' +
       '<label class="f">Atau tulis nama (muzakki di luar data)<input id="mNama" class="fi" value="' + esc(M.namaBebas) + '" placeholder="Opsional"></label>' +
       (fid ? '<label class="f">Jumlah hari fidyah<input id="mHari" class="fi" inputmode="numeric" value="' + esc(M.hari) + '"><span class="sub" style="font-weight:400">Tarif ' + esc(c.Hijriah) + ': ' + (c.Tarif_Fidyah ? rp(c.Tarif_Fidyah) + ' per hari' : 'belum diatur di Konfigurasi') + '</span></label>' : '') +
@@ -307,7 +307,7 @@
       '<button type="submit" class="btn ' + color + ' block" id="mSave">' + (M.id ? 'Simpan perubahan' : 'Simpan') + '</button></form>';
     var on = function (id, ev, fn) { var el = $('#' + id); if (el) el.addEventListener(ev, fn); };
     var tm;
-    on('mQ', 'input', function (e) { M.q = e.target.value; clearTimeout(tm); tm = setTimeout(cariM, 300); });
+    on('mQ', 'input', function (e) { M.q = e.target.value; clearTimeout(tm); if (!M.q) { M.pilih = null; M.hasil = []; drawRes(); return; } tm = setTimeout(cariM, 300); });
     on('mNama', 'input', function (e) { M.namaBebas = e.target.value; if (M.namaBebas) { M.pilih = null; M.hasil = []; drawRes(); } });
     on('mHari', 'input', function (e) { M.hari = e.target.value; var t = Number(c.Tarif_Fidyah) || 0; if (t) { M.nominal = Z.parseNum(M.hari) * t; $('#mNom').value = nf(M.nominal); } });
     on('mNom', 'input', function (e) { M.nominal = Z.parseNum(e.target.value); prevM(); });

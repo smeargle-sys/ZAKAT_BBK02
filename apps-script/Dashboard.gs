@@ -162,8 +162,11 @@ function ringkasTahun_(tahun, detail) {
   return out;
 }
 
-function dashboard_(p) {
-  return ringkasTahun_(Number(p.tahun || tahunAktif_().Tahun), true);
+function dashboard_(p, s) {
+  var out = ringkasTahun_(Number(p.tahun || tahunAktif_().Tahun), true);
+  // D-34: bagian amil kelompok (hitungan & hasil musyawarah) hanya untuk admin; tidak dikirim ke amil/pengurus
+  if (!s || s.role !== 'admin') delete out.bagianAmil;
+  return out;
 }
 
 function tren_() {

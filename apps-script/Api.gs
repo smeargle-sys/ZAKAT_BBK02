@@ -86,7 +86,14 @@ function kunciCache_(p, sess) {
   if (!boleh[p.action] || p.segar) return '';
   var ver = versiData_();
   if (!ver) return '';
-  return ['r', p.action, ver, p.tahun || '', p.kelas || '', p.action === 'kkList' && sess ? sess.idAmil || '' : ''].join('|');
+  return ['r', p.action, ver, p.tahun || '', p.kelas || '', varianCache_(p.action, sess)].join('|');
+}
+
+/** Bagian kunci cache yang bergantung pada sesi: ringkasan "saya" per amil, dan isi dashboard admin vs lainnya (D-34). */
+function varianCache_(action, sess) {
+  if (action === 'kkList') return sess ? sess.idAmil || '' : '';
+  if (action === 'dashboard') return sess && sess.role === 'admin' ? 'admin' : 'umum';
+  return '';
 }
 
 function okStr_(dataStr) {

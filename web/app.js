@@ -47,7 +47,7 @@
           if (j.sesiHabis) { logoutLocal(); toast('Sesi berakhir, silakan masuk lagi.', true); go('#/login'); }
           throw new Error(j.error || 'Gagal');
         }
-        if (!BACA[action]) { Object.keys(RC).forEach(function (k) { RC[k].t = 0; }); CARI = {}; }
+        if (!BACA[action]) { Object.keys(RC).forEach(function (k) { RC[k].t = 0; }); CARI = {}; PENDING = {}; }
         return j.data;
       });
   }
@@ -59,16 +59,26 @@
    */
   var RC = {}, SEGAR_MS = 20000;
   function rcKey(action, params) { return action + '|' + JSON.stringify(params || {}); }
+  /** Satu permintaan per data: halaman dan prefetch yang meminta data sama memakai permintaan yang sama. */
+  var PENDING = {};
+  function ambil(k, action, params) {
+    if (PENDING[k]) return PENDING[k];
+    var p = api(action, params).then(function (d) {
+      if (PENDING[k] === p) delete PENDING[k];
+      RC[k] = { data: d, s: JSON.stringify(d), t: Date.now() };
+      return d;
+    }, function (e) { if (PENDING[k] === p) delete PENDING[k]; throw e; });
+    PENDING[k] = p;
+    return p;
+  }
   function apiCepat(action, params, onData) {
-    var k = rcKey(action, params), hit = RC[k], r0 = RUTE;
+    var k = rcKey(action, params), hit = RC[k], r0 = RUTE, lama = hit ? hit.s : null;
     if (hit) {
       onData(hit.data, true);
       if (Date.now() - hit.t < SEGAR_MS) return Promise.resolve(hit.data);
     }
-    return api(action, params).then(function (d) {
-      var baru = JSON.stringify(d), lama = hit ? hit.s : null;
-      RC[k] = { data: d, s: baru, t: Date.now() };
-      if (r0 === RUTE && baru !== lama) onData(d, false);
+    return ambil(k, action, params).then(function (d) {
+      if (r0 === RUTE && RC[k].s !== lama) onData(d, false);
       return d;
     }, function (e) { if (!hit) throw e; });
   }
@@ -127,14 +137,16 @@
     prefetched = true;
     setTimeout(function () {
       var t = S.tahun || (S.boot && S.boot.tahunAktif);
+      // halaman pembuka (Pemantauan) sudah diminta sendiri; ini menyiapkan halaman berikutnya
       var list = [['dashboard', { tahun: t }]];
-      if (S.role !== 'amil') list.push(['tren', undefined]);
+      if (S.role !== 'pengurus') list.push(['kkList', undefined]);
+      list.push(['tren', undefined]);
       list.forEach(function (x) {
         var k = rcKey(x[0], x[1]);
         if (RC[k]) return;
-        api(x[0], x[1]).then(function (d) { if (!RC[k]) RC[k] = { data: d, s: JSON.stringify(d), t: Date.now() }; }).catch(function () { });
+        ambil(k, x[0], x[1]).catch(function () { });
       });
-    }, 1200);
+    }, 300);
   }
 
   function toast(msg, err) {
@@ -201,9 +213,10 @@
       case 'tren': return viewTren();
       case 'setoran': return viewSetoran(q.tahun);
       case 'config': return viewConfig(q.tahun);
-      default: go(S.role === 'amil' ? '#/amil' : '#/dash');
+      default: go('#/dash');
     }
   }
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) { /* browser lama */ }
   window.addEventListener('hashchange', route);
 
   // ---------- event delegation ----------
@@ -216,6 +229,15 @@
   });
   ACT.logout = function () { api('logout').catch(function () { }); logoutLocal(); go('#/login'); };
   ACT.close = closeModal;
+  /** Tombol x di kolom cari: kosongkan isian lalu picu 'input' supaya daftar/filter ikut direset. */
+  ACT.hapusCari = function (el) {
+    var box = el.closest('.search'), inp = box ? $('input', box) : null;
+    if (!inp) return;
+    inp.value = '';
+    var ev; try { ev = new Event('input', { bubbles: true }); } catch (e) { ev = document.createEvent('Event'); ev.initEvent('input', true, true); }
+    inp.dispatchEvent(ev);
+    inp.focus();
+  };
   ACT.go = function (el) { go(el.getAttribute('data-h')); };
 
   // =====================================================================
@@ -265,7 +287,7 @@
       S.token = r.token; S.role = r.role; S.nama = r.nama; S.idAmil = r.idAmil;
       store.set('zakat_token', r.token); store.set('zakat_role', r.role); store.set('zakat_nama', r.nama || ''); store.set('zakat_idAmil', r.idAmil || '');
       toast('Assalamu\'alaikum, ' + r.nama + '.');
-      go(r.role === 'amil' ? '#/amil' : '#/dash');
+      go('#/dash');
     }).catch(function (e) { L.busy = false; L.pin = ''; renderLogin(e.message); });
   }
 
@@ -308,7 +330,7 @@
       '<button type="button" class="btn" data-act="go" data-h="#/lain?jenis=MAL">Mal / Tijaroh</button>' +
       '<button type="button" class="btn" data-act="go" data-h="#/lain?jenis=FIDYAH">Fidyah</button></div>' +
       '<div style="display:flex;flex-direction:column;gap:10px"><h2 style="font-size:16px">Zakat fitrah per keluarga (dari sensus)</h2>' +
-      '<label class="search">' + ICON.search + '<span class="sr">Cari nama KK atau anggota</span><input id="kkQ" type="search" placeholder="Nama KK atau anggota…" value="' + esc(AH.q) + '"></label>' +
+      '<label class="search">' + ICON.search + '<span class="sr">Cari nama KK atau anggota</span><input id="kkQ" type="search" placeholder="Nama KK atau anggota…" value="' + esc(AH.q) + '"><button type="button" class="clr" data-act="hapusCari" aria-label="Hapus pencarian">' + ICON.x + '</button></label>' +
       '<div class="filters" role="group" aria-label="Filter status">' +
       [['SEMUA', 'Semua'], ['BELUM', 'Belum'], ['SEBAGIAN', 'Sebagian'], ['KURANG', 'Kurang bayar'], ['SUDAH', 'Sudah']].map(function (f) {
         return '<button type="button" data-act="kkFilter" data-f="' + f[0] + '" aria-pressed="' + (AH.filter === f[0]) + '"' + (AH.filter === f[0] ? ' class="on"' : '') + '>' + f[1] + ' ' + cnt[f[0]] + '</button>';

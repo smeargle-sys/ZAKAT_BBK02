@@ -159,7 +159,7 @@
       malCard('Pembagian zakat mal &amp; tijaroh', mU, d.mal.UTAMA) +
       (mS.total ? malCard('Pembagian zakat mal susulan', mS, d.mal.SUSULAN) : '') + '</div>' +
 
-      bagianAmilCard('UTAMA') + (mS.total ? bagianAmilCard('SUSULAN') : '') +
+      (d.bagianAmil ? bagianAmilCard('UTAMA') + (mS.total ? bagianAmilCard('SUSULAN') : '') : '') +
 
       // UB
       card('Lebih bayar untuk Usaha Bersama (UB)', 'Dicatat otomatis dari tiap setoran · uang dipegang amil sampai dicatat diserahkan ke UB',
@@ -413,7 +413,7 @@
     Z.app.innerHTML = '<div class="wrap"><div class="head"><div class="t"><h1>Data Setoran</h1><p>' + DS.rows.length + ' transaksi · ' + (S.role === 'admin' ? 'admin bisa mengubah dan menghapus' : 'hanya lihat, perubahan oleh admin') + '</p></div>' + tahunSelect('sTahun', S.tahun) +
       (S.role === 'admin' ? '<a class="btn pri" href="#/amil">' + ICON.plus + 'Input setoran</a>' : '') + '</div>' +
       (perluCek ? '<div class="note warn">' + ICON.info + '<span>' + perluCek + ' setoran hasil impor namanya belum cocok ke sensus (tanda <b>cek</b>). Perbaiki lewat sheet <b>Impor_Review</b> lalu menu Zakat › Terapkan hasil review impor.</span></div>' : '') +
-      '<section class="card"><div class="ch"><label class="search" style="flex:1 1 240px;height:44px">' + ICON.search + '<span class="sr">Cari</span><input id="sQ" type="search" placeholder="Cari nama jiwa, KK, atau amil…" value="' + esc(DS.q) + '"></label>' +
+      '<section class="card"><div class="ch"><label class="search" style="flex:1 1 240px;height:44px">' + ICON.search + '<span class="sr">Cari</span><input id="sQ" type="search" placeholder="Cari nama jiwa, KK, atau amil…" value="' + esc(DS.q) + '"><button type="button" class="clr" data-act="hapusCari" aria-label="Hapus pencarian">' + ICON.x + '</button></label>' +
       '<div class="filters" role="group" aria-label="Filter jenis">' + [['', 'Semua'], ['FITRAH', 'Fitrah'], ['MAL', 'Mal'], ['TIJAROH', 'Tijaroh'], ['MAL_TIJAROH', 'Campuran'], ['FIDYAH', 'Fidyah']].map(function (f) {
         return '<button type="button" data-act="sKelas" data-k="' + f[0] + '" aria-pressed="' + (DS.kelas === f[0]) + '"' + (DS.kelas === f[0] ? ' class="on"' : '') + '>' + f[1] + '</button>';
       }).join('') + '</div><button type="button" class="btn sm" data-act="sCsv">Ekspor CSV</button></div><div id="sTbl">' + setoranTable(rows, true) + '</div></section></div>';
@@ -524,7 +524,7 @@
     var i = Number(el.getAttribute('data-i')), a = i >= 0 ? CF.amil[i] : { nama: '', jabatan: 'Amil', saham: 1, aktif: true, idJamaah: '' };
     var pick = a.idJamaah ? { id: a.idJamaah, nama: a.nama } : null;
     Z.openModal('<div class="mh"><h2>' + (i >= 0 ? 'Ubah amil' : 'Tambah amil') + '</h2><button type="button" class="btn sm" data-act="close" aria-label="Tutup">' + ICON.x + '</button></div>' +
-      '<label class="f">Cari dari jamaah sensus<span class="search">' + ICON.search + '<input id="amQ" type="search" placeholder="Ketik nama…" value="' + esc(a.nama) + '"></span></label><div class="results hidden" id="amRes"></div>' +
+      '<label class="f">Cari dari jamaah sensus<span class="search">' + ICON.search + '<input id="amQ" type="search" placeholder="Ketik nama…" value="' + esc(a.nama) + '"><button type="button" class="clr" data-act="hapusCari" aria-label="Hapus pencarian">' + ICON.x + '</button></span></label><div class="results hidden" id="amRes"></div>' +
       '<label class="f">Nama amil (tampil di aplikasi)<input id="amNama" class="fi" value="' + esc(a.nama) + '"></label>' +
       '<div class="fgrid"><label class="f">Jabatan<input id="amJab" class="fi" value="' + esc(a.jabatan) + '"></label><label class="f">Saham<input id="amSaham" class="fi" inputmode="decimal" value="' + esc(a.saham) + '"></label></div>' +
       pinField('amPin', i < 0) +
@@ -533,6 +533,7 @@
     var tm;
     $('#amQ').addEventListener('input', function (e) {
       clearTimeout(tm); var q = e.target.value.trim(), el2 = $('#amRes');
+      if (!q) pick = null;
       if (q.length < 2) { el2.classList.add('hidden'); return; }
       el2.classList.remove('hidden'); el2.innerHTML = '<p class="sub" style="padding:12px;margin:0"><span class="spin"></span>Mencari nama di sensus…</p>';
       tampil(el2);

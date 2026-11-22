@@ -54,7 +54,16 @@ log('D-29 sensus ok');
 // ---------- pemanas cache: hasil siap di cache dengan kunci yang sama dengan request web ----------
 g.hangatkanCache();
 const ver=g.versiData_(), th=String(g.tahunAktif_().Tahun);
-assert(g.cacheAmbil_(['r','dashboard',ver,th,'',''].join('|')),'dashboard sudah dihangatkan');
+assert(g.cacheAmbil_(['r','dashboard',ver,th,'','umum'].join('|')),'dashboard (umum) sudah dihangatkan');
+assert(g.cacheAmbil_(['r','dashboard',ver,th,'','admin'].join('|')),'dashboard (admin) sudah dihangatkan');
+assert(!/bagianAmil/.test(g.cacheAmbil_(['r','dashboard',ver,th,'','umum'].join('|'))),'cache umum tanpa bagian amil');
 assert(g.cacheAmbil_(['r','tren',ver,'','',''].join('|')),'tren sudah dihangatkan');
-assert.strictEqual(g.kunciCache_({action:'dashboard',tahun:Number(th)},null),['r','dashboard',ver,th,'',''].join('|'),'kunci pemanas = kunci request web');
+assert.strictEqual(g.kunciCache_({action:'dashboard',tahun:Number(th)},{role:'pengurus'}),['r','dashboard',ver,th,'','umum'].join('|'),'kunci pemanas = kunci request web');
+assert.strictEqual(g.kunciCache_({action:'dashboard',tahun:Number(th)},{role:'admin'}),['r','dashboard',ver,th,'','admin'].join('|'));
+
+// ---------- D-34: bagian amil hanya untuk admin (termasuk lewat cache) ----------
+const pertama=g.call({action:'dashboard',token:admin}); assert(pertama.ok && pertama.data.bagianAmil,'admin melihat bagian amil');
+[a1,peng].forEach(t=>{ const x=g.call({action:'dashboard',token:t}); assert(x.ok,x.error); assert(!('bagianAmil' in x.data),'amil/pengurus tidak menerima bagian amil'); });
+assert(g.call({action:'dashboard',token:admin}).data.bagianAmil,'admin tetap melihat setelah amil membuka (cache terpisah)');
+log('D-34 ok');
 console.log('uat-perbaikan: lulus');

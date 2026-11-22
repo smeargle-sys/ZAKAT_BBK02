@@ -130,6 +130,11 @@ textarea.fi{height:auto;min-height:70px;padding:10px 12px}
 .list .nm b{font-size:15px}.list .nm span{font-size:12px;color:var(--muted)}
 .search{display:flex;align-items:center;gap:8px;height:50px;padding:0 14px;border:1px solid #D6DEDB;border-radius:14px;background:#fff}
 .search input{border:0;outline:none;font-size:16px;flex:1;min-width:0;background:transparent}
+/* tombol x untuk mengosongkan kolom cari; tombol bawaan browser disembunyikan supaya tidak dobel */
+.search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
+.search .clr{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-right:-10px;border:0;border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}
+.search .clr:hover{background:var(--line2);color:var(--ink)}
+.search input:placeholder-shown+.clr{visibility:hidden}
 .results{border:1px solid var(--line);border-radius:14px;overflow:hidden;max-height:200px;overflow-y:auto}
 .results button{display:flex;align-items:center;gap:10px;min-height:54px;padding:6px 12px;width:100%;border:0;border-top:1px solid var(--line2);background:#fff;text-align:left;cursor:pointer}
 .results button:first-child{border-top:0}

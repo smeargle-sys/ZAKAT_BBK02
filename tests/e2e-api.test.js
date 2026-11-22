@@ -66,7 +66,7 @@ log('DASH belum',d.belum.length,'jiwaBelum',d.jiwaBelum,'harian',JSON.stringify(
 assert.strictEqual(d.pembagianFitrah.reduce((a,x)=>a+x.soq,0),d.fitrah.soqDiterima);
 assert.strictEqual(d.ub.terkumpul,10000); assert.strictEqual(d.ub.dipegang,5000);
 // bagian amil musyawarah
-const b=d.bagianAmil.UTAMA; log('bagian pool',b.poolSoq,b.poolRp,JSON.stringify(b.items));
+assert(!('bagianAmil' in d),'pengurus tidak menerima bagian amil (D-34)'); const b=g.call({action:'dashboard',token:admin}).data.bagianAmil.UTAMA; log('bagian pool',b.poolSoq,b.poolRp,JSON.stringify(b.items));
 r=g.call({action:'simpanBagianAmil',token:admin,tahun:2027,lampiran:'UTAMA',items:b.items.map(i=>({idAmil:i.idAmil,nama:i.nama,beras:Math.floor(i.hitBeras),uang:Math.floor(i.hitUang/10000)*10000})),catatan:'Musyawarah: sisa untuk kas amil'}); assert(r.ok,r.error);
 r=g.call({action:'dashboard',token:admin}); log('setelah musyawarah sisa',r.data.bagianAmil.UTAMA.sisaRp,r.data.bagianAmil.UTAMA.sisaSoq);
 // edit setoran & hapus

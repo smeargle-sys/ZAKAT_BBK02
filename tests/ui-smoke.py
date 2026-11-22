@@ -12,6 +12,8 @@ async def main():
         m.on('pageerror', lambda e: errs.append(str(e)))
         await m.goto(BASE + '/'); await m.wait_for_selector('.keys')
         for d in '222222': await m.click(f'.keys button[data-k="{d}"]')
+        await m.wait_for_selector('.kpi.dark')  # semua peran masuk ke Pemantauan setelah login
+        await m.click('#nav a[href="#/amil"]')
         await m.wait_for_selector('#kkList li'); await m.screenshot(path='tests/shots/amil-home.png', full_page=True)
         await m.click('[data-act=kkFilter][data-f=BELUM]'); await m.click('#kkList li a'); await m.wait_for_selector('#fForm')
         await m.fill('#fTerima', '1000000'); await m.screenshot(path='tests/shots/form-fitrah.png', full_page=True)

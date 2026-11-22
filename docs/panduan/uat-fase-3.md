@@ -134,6 +134,16 @@ Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfiguras
 - **Simpan:** saat tombol menampilkan "Menyimpan…", semua isian tidak bisa diubah.
 - **Refresh:** catat waktu buka pertama Pemantauan setelah refresh browser (target ≤ 4–5 detik). Jika **pemanas cache** dipasang (editor › Triggers › `hangatkanCache` tiap 10 menit), pembukaan pertama di pagi hari juga cepat.
 
+### 15. Perbaikan temuan UAT v1.4
+- **Halaman pembuka:** login sebagai amil/pengurus/admin → halaman pertama = **Pemantauan**.
+- **Daftar keluarga:** tunggu ±5 detik di Pemantauan → buka Input Setoran → daftar keluarga langsung tampil tanpa "Memuat…".
+- **Posisi gulir:** di Input Setoran gulir ke bawah → buka satu KK → tekan tombol back HP → halaman Input Setoran tampil dari atas (tidak melompat ke posisi lama).
+- **Tombol × di semua kolom cari:** kolom cari KK (Input Setoran), simpatisan, muzakki mal/fidyah, Data Setoran, dan cari amil di Konfigurasi.
+  - × muncul saat ada isian;
+  - menekannya mengosongkan isian dan mengembalikan daftar;
+  - di form mal/fidyah, "Terpilih: …" ikut hilang.
+- **Bagian amil kelompok:** login amil dan pengurus → Pemantauan **tidak** menampilkan kartu "Bagian amil kelompok". Login admin → kartu tampil dan hasil musyawarah tetap bisa diisi.
+
 ## Hasil yang Diharapkan
 
 **Sukses UAT jika:**
