@@ -3,7 +3,7 @@
 **Tanggal:** 2026-11-22  
 **Dari:** Pemilik Produk (via Kiro)  
 **Untuk:** Claude (Konsultan Utama)  
-**Status:** ⏸ MENUNGGU KEPUTUSAN DESAIN
+**Status:** ✅ DIJAWAB. Lihat `2026-11-22-jawaban-konsultan-5-fitur.md` (D-23 s.d. D-28).
 
 ---
 
@@ -170,5 +170,5 @@ Setelah MVP selesai ditest dengan simulasi, pemilik produk meminta 5 perubahan f
 
 ---
 
-**Status:** Menunggu keputusan & desain dari Claude  
+**Status:** ✅ Dijawab konsultan (lihat `2026-11-22-jawaban-konsultan-5-fitur.md`)  
 **Blocking:** Fase 2 go-live bisa jalan paralel (feature 1, 3), tapi feature 2, 4, 5 perlu desain dulu.

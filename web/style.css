@@ -134,6 +134,7 @@ textarea.fi{height:auto;min-height:70px;padding:10px 12px}
 .results button{display:flex;align-items:center;gap:10px;min-height:54px;padding:6px 12px;width:100%;border:0;border-top:1px solid var(--line2);background:#fff;text-align:left;cursor:pointer}
 .results button:first-child{border-top:0}
 .results button.on{background:var(--mint)}
+.results button.done{opacity:.6;cursor:default}
 .results .nm{display:flex;flex-direction:column;gap:2px;flex:1}.results .nm span{font-size:12px;color:var(--muted)}
 
 /* login */

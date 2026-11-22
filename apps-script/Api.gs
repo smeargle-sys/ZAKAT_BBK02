@@ -48,6 +48,7 @@ function routes_() { return {
 }; }
 
 function handle_(p) {
+  memoReset_(true);
   try {
     var r = routes_()[p.action];
     if (!r) throw new Error('Aksi tidak dikenal: ' + p.action);
@@ -56,9 +57,36 @@ function handle_(p) {
       sess = session_(p.token);
       if (r.roles.length) requireRole_(sess, r.roles);
     }
+    var ck = kunciCache_(p, sess);
+    if (ck) {
+      var hit = cacheAmbil_(ck);
+      if (hit) return okStr_(hit);
+      var str = JSON.stringify(r.fn(p, sess));
+      cacheSimpan_(ck, str);
+      return okStr_(str);
+    }
     return json_({ ok: true, data: r.fn(p, sess) });
   } catch (err) {
     var msg = String(err && err.message || err);
     return json_({ ok: false, error: msg, sesiHabis: msg === 'SESI_HABIS' });
+  } finally {
+    memoReset_(false);
   }
+}
+
+/**
+ * Aksi baca yang berat dan hasilnya sama untuk semua peran (kecuali kkList: ringkasan "saya" per amil).
+ * Kunci memuat versi data, jadi setiap simpan/ubah/hapus otomatis membuat cache lama tidak terpakai.
+ * p.segar = true → lewati cache (tombol muat ulang).
+ */
+function kunciCache_(p, sess) {
+  var boleh = { dashboard: 1, tren: 1, kkList: 1, daftarSetoran: 1 };
+  if (!boleh[p.action] || p.segar) return '';
+  var ver = versiData_();
+  if (!ver) return '';
+  return ['r', p.action, ver, p.tahun || '', p.kelas || '', p.action === 'kkList' && sess ? sess.idAmil || '' : ''].join('|');
+}
+
+function okStr_(dataStr) {
+  return ContentService.createTextOutput('{"ok":true,"data":' + dataStr + '}').setMimeType(ContentService.MimeType.JSON);
 }

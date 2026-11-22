@@ -32,7 +32,8 @@ function ringkasTahun_(tahun, detail) {
   var sen = (aktif || !c.Jiwa_Sensus) ? readSensus_() : null;
   var jiwaSensus = sen ? sen.jamaah.length : num_(c.Jiwa_Sensus);
   var kkSensus = sen ? sen.keluarga.length : num_(c.KK_Sensus);
-  var kkSetor = Object.keys(F.reduce(function (a, r) { if (r.ID_Keluarga) a[r.ID_Keluarga] = 1; return a; }, {})).length;
+  // KK = hanya yang punya ID Keluarga di sensus. Jamaah tanpa ID Keluarga (TANPA-KK-…) dihitung sebagai jiwa, bukan KK (D-28).
+  var kkSetor = Object.keys(F.reduce(function (a, r) { if (r.ID_Keluarga && !isTanpaKK_(r.ID_Keluarga)) a[r.ID_Keluarga] = 1; return a; }, {})).length;
 
   // zakat mal & tijaroh per lampiran
   var lainMal = L.filter(function (r) { return r.Jenis !== 'FIDYAH'; });
@@ -136,18 +137,25 @@ function ringkasTahun_(tahun, detail) {
 
   // belum setor & kurang bayar (hanya bermakna untuk data dari aplikasi)
   if (aktif) {
-    var kk = kkList_({ tahun: tahun }, {}).list
-      .filter(function (k) { return !k.tanpaKK; }); // hanya KK asli (punya ID Keluarga), exclude TANPA-KK virtual
-    out.belum = kk.filter(function (k) { return k.status !== 'SUDAH'; }).map(function (k) {
+    var kk = kkList_({ tahun: tahun }, {}).list;
+    // Daftar belum per KK hanya KK asli. Jamaah tanpa KK tetap wajib dizakati, jadi ditampilkan
+    // terpisah sebagai daftar jiwa (D-28), dan tetap masuk hitungan jiwa belum.
+    out.belumTanpaKK = kk.filter(function (k) { return k.tanpaKK && k.status !== 'SUDAH'; }).map(function (k) {
+      var a = k.anggota[0] || {};
+      return { id: k.id, nama: a.nama || k.nama, keberadaan: a.keberadaan || '', status: k.status, kurangRp: k.kurangRp };
+    });
+    out.belum = kk.filter(function (k) { return !k.tanpaKK && k.status !== 'SUDAH'; }).map(function (k) {
       var bel = k.anggota.filter(function (a) { return !a.sudah; });
       return { id: k.id, nama: k.nama, jiwa: k.jiwa, belum: bel.length, anggota: bel.length === k.anggota.length ? 'Semua anggota' : bel.map(function (a) { return a.nama + (a.keberadaan !== 'Menetap' ? ' (' + a.keberadaan + ')' : ''); }).join(', '),
         status: k.status, kurangRp: k.kurangRp };
     });
     out.jiwaBelum = jiwaSensus - sum_(kk, function (k) { return k.sudah; });
+    out.progres = progresJamaah_(kk, F, c, jiwaSensus);
   }
   out.terbaru = daftarSetoran_({ tahun: tahun }).slice(0, 15);
   var idf = c.Tgl_Idul_Fitri ? new Date(c.Tgl_Idul_Fitri + 'T00:00:00+07:00') : null;
   out.hMinus = idf ? Math.ceil((idf - new Date(fmtDate_(new Date()) + 'T00:00:00+07:00')) / 864e5) : null;
+  if (out.progres) out.progres.hMinus = out.hMinus;
   out.config = c;
   out.batasLewat = batasFitrahLewat_(c);
   out.diperbarui = nowIso_();
@@ -162,4 +170,32 @@ function tren_() {
   return configs_().map(function (c) {
     try { return ringkasTahun_(c.Tahun, false); } catch (e) { return { tahun: c.Tahun, error: String(e.message) }; }
   });
+}
+
+function isTanpaKK_(id) { return String(id).indexOf('TANPA-KK-') === 0; }
+
+/**
+ * Progres untuk dibagikan ke jamaah (D-26): tanpa nominal, tanpa nama.
+ * KK = KK asli (punya ID Keluarga); jiwa = semua jamaah sensus, termasuk yang "Di kampung".
+ * "Hari ini" = pertambahan dari setoran ber-Tanggal hari ini.
+ */
+function progresJamaah_(kk, F, c, jiwaTotal) {
+  var hariIni = fmtDate_(new Date()), idHariIni = {};
+  F.forEach(function (r) { if (toDateStr_(r.Tanggal) === hariIni) idHariIni[String(r.ID)] = 1; });
+  var o = { kkTotal: 0, kkSudah: 0, kkSebagian: 0, jiwaTotal: jiwaTotal, jiwaSudah: 0, kkHariIni: 0, jiwaHariIni: 0,
+    tanggal: hariIni, hMinus: null, batasFitrah: String(c.Batas_Fitrah || ''), batasLewat: batasFitrahLewat_(c) };
+  kk.forEach(function (k) {
+    var sudah = 0, sebelumHariIni = 0;
+    k.anggota.forEach(function (a) {
+      if (!a.sudah) return;
+      sudah++;
+      if (idHariIni[a.idSetoran]) o.jiwaHariIni++; else sebelumHariIni++;
+    });
+    o.jiwaSudah += sudah;
+    if (k.tanpaKK || !k.anggota.length) return;
+    o.kkTotal++;
+    if (sudah === k.anggota.length) { o.kkSudah++; if (sebelumHariIni < k.anggota.length) o.kkHariIni++; }
+    else if (sudah > 0) o.kkSebagian++;
+  });
+  return o;
 }

@@ -96,6 +96,28 @@ Jam HP atau server tidak perlu diubah. Cukup ubah **`Batas_Fitrah` di Konfiguras
 
 ---
 
+### 11. Fitur pra-Ramadhan (D-24 s.d. D-26)
+- **Admin mencatat atas nama amil:** login Admin → Input setoran → pilih *Amil yang menerima* = amil lain → simpan.
+  - Di Data Setoran, kolom Amil menampilkan amil tersebut + "dicatat oleh <admin>".
+  - CSV memuat kolom "Dicatat oleh".
+- **Simpatisan sudah zakat terkunci:** catat fitrah simpatisan berdiri sendiri → buka lagi *Fitrah simpatisan* → cari nama yang sama. Namanya harus tampil abu-abu dengan label "Sudah zakat" dan tidak bisa dipilih.
+- **Bagikan progres (HP pengurus):** Pemantauan → *Bagikan progres* → cek teks:
+  - tanpa rupiah, tanpa nama;
+  - persen KK & jiwa masuk akal;
+  - ada H-n dan batas zakat fitrah.
+  - Tekan *Kirim ke WhatsApp*: WhatsApp terbuka dengan teks terisi. Coba juga *Salin teks*.
+- **Amil tidak melihat tombol Bagikan progres.**
+
+### 12. Hitungan KK & jiwa tanpa KK (D-28)
+- **Kotak Belum zakat fitrah:** jumlah KK = jumlah KK di sensus (yang punya ID Keluarga), mis. 65, bukan 88.
+- **Tabel "Jiwa tanpa KK":** di bawahnya ada tabel ini berisi perantau/pendatang/mandiri yang belum zakat.
+- **Catat zakat satu jamaah tanpa KK** (di daftar amil bertanda "Tanpa KK") → namanya hilang dari tabel "Jiwa tanpa KK", dan hitungan KK tidak berubah.
+
+### 13. Kecepatan
+- **Pindah halaman:** setelah login, buka Pemantauan → Tren → Data Setoran → kembali ke Pemantauan. Halaman yang sudah pernah dibuka harus langsung tampil (tanpa "Memuat…"), lalu diperbarui sendiri bila ada data baru.
+- **Kesegaran setelah simpan:** simpan setoran di HP amil → di laptop admin tekan *Muat ulang* di Pemantauan → angka langsung bertambah.
+- **Catat waktu tunggu pertama kali** membuka Pemantauan dan Tren (detik), untuk laporan.
+
 ## Hasil yang Diharapkan
 
 **Sukses UAT jika:**

@@ -36,9 +36,10 @@ Skema resmi ada di `SHEETS` di `apps-script/00_Config.gs`. Tabel di bawah menjel
 `ID_SM, Nama, JK, ID_Keluarga (kosong = berdiri sendiri), Hubungan, No_HP, Catatan, Dibuat`
 
 ## Setoran_Fitrah (1 baris per setoran)
-- **Kolom:** `ID, Tahun, Tanggal, Waktu_Input, ID_Keluarga, Nama_Muzakki, ID_Amil, Nama_Amil, Jenis(BERAS|UANG|KAMPUNG), Jiwa_JM, Jiwa_SM, Jiwa_Luar, Total_Jiwa, Kg_Beras, Harga_Soq, Wajib_Rp, Diterima_Rp, Selisih_Rp, Tujuan_Lebih(UB|KEMBALI), Status_Bayar(LUNAS|KURANG), Catatan, Sumber(APP|IMPOR), Match_Status, Dihapus, Diubah_Oleh, Diubah_Waktu`
+- **Kolom:** `ID, Tahun, Tanggal, Waktu_Input, ID_Keluarga, Nama_Muzakki, ID_Amil, Nama_Amil, Jenis(BERAS|UANG|KAMPUNG), Jiwa_JM, Jiwa_SM, Jiwa_Luar, Total_Jiwa, Kg_Beras, Harga_Soq, Wajib_Rp, Diterima_Rp, Selisih_Rp, Tujuan_Lebih(UB|KEMBALI), Status_Bayar(LUNAS|KURANG), Catatan, Sumber(APP|IMPOR), Match_Status, Dihapus, Diubah_Oleh, Diubah_Waktu, Dicatat_Oleh`
 - **Harga_Soq disalin** saat simpan, supaya histori tidak berubah bila harga diubah.
 - **ID_Keluarga** bisa `TANPA-KK-<ID Jamaah>`, atau kosong untuk simpatisan berdiri sendiri.
+- **Dicatat_Oleh** (D-24): nama yang mencatat saat setoran dibuat (bisa admin atas nama amil). Tidak berubah saat setoran diubah. Kosong untuk data impor/lama. Kolom yang sama juga ada di `Zakat_Lain`.
 - **Match_Status** (impor): `COCOK | PERLU_CEK | TIDAK_ADA | MANUAL | SM`.
 
 ## Setoran_Fitrah_Jiwa (rincian per jiwa, hanya data APP)
@@ -46,7 +47,7 @@ Skema resmi ada di `SHEETS` di `apps-script/00_Config.gs`. Tabel di bawah menjel
 - **Sumber kebenaran "siapa sudah zakat"** dan cek duplikat. Data impor tidak punya rincian per jiwa.
 
 ## Zakat_Lain
-`ID, Tahun, Tanggal, Waktu_Input, Jenis(MAL|TIJAROH|MAL_TIJAROH|FIDYAH), Lampiran(UTAMA|SUSULAN|''), Ref_Tipe(JM|SM|KK|LAIN), Ref_ID, Nama, ID_Keluarga, Nominal, Hari_Fidyah, Cara_Bayar, ID_Amil, Nama_Amil, Catatan, Sumber, Dihapus, Diubah_Oleh, Diubah_Waktu`
+`ID, Tahun, Tanggal, Waktu_Input, Jenis(MAL|TIJAROH|MAL_TIJAROH|FIDYAH), Lampiran(UTAMA|SUSULAN|''), Ref_Tipe(JM|SM|KK|LAIN), Ref_ID, Nama, ID_Keluarga, Nominal, Hari_Fidyah, Cara_Bayar, ID_Amil, Nama_Amil, Catatan, Sumber, Dihapus, Diubah_Oleh, Diubah_Waktu, Dicatat_Oleh`
 
 ## Tabel pendukung
 - **Pembelian_Beras:** `ID, Tahun, Tanggal, Kg, Rupiah, Catatan, Oleh, Dihapus`

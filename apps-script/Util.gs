@@ -8,8 +8,29 @@ function sheet_(name) {
   return sh;
 }
 
+/**
+ * Cache tabel per request web (diaktifkan handle_). Satu request cukup membaca tiap sheet sekali.
+ * null = nonaktif (menu spreadsheet, impor, setup). Dikosongkan saat masuk/keluar withLock_
+ * dan saat tabel ditulis, supaya cek duplikat di dalam lock selalu membaca data terbaru.
+ */
+var REQ_MEMO_ = null;
+function memoReset_(aktif) { REQ_MEMO_ = aktif ? {} : null; }
+function memoBuang_(name) {
+  if (!REQ_MEMO_) return;
+  if (name) { delete REQ_MEMO_[name]; return; }
+  var sen = REQ_MEMO_.__sensus; // sensus hanya dibaca (tidak pernah ditulis aplikasi), aman dipertahankan
+  REQ_MEMO_ = {}; if (sen) REQ_MEMO_.__sensus = sen;
+}
+
 /** Baca sheet sebagai array objek (key = header). Tiap objek punya _row (nomor baris di sheet). */
 function readTable_(name) {
+  if (REQ_MEMO_ && REQ_MEMO_[name]) return REQ_MEMO_[name];
+  var t = bacaTable_(name);
+  if (REQ_MEMO_) REQ_MEMO_[name] = t;
+  return t;
+}
+
+function bacaTable_(name) {
   var sh = sheet_(name);
   var last = sh.getLastRow(), cols = sh.getLastColumn();
   if (cols === 0) return { sh: sh, headers: [], rows: [] };
@@ -26,12 +47,13 @@ function readTable_(name) {
 
 function rowsOf_(name, filterFn) {
   var t = readTable_(name);
-  return filterFn ? t.rows.filter(filterFn) : t.rows;
+  return filterFn ? t.rows.filter(filterFn) : t.rows.slice();
 }
 
 /** Tambah banyak objek sekaligus sesuai urutan header. */
 function appendObjects_(name, objs) {
   if (!objs.length) return;
+  memoBuang_(name);
   var sh = sheet_(name);
   var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
   var data = objs.map(function (o) { return headers.map(function (h) { return o[h] === undefined || o[h] === null ? '' : o[h]; }); });
@@ -112,7 +134,35 @@ function log_(sess, aksi, detail) {
 function withLock_(fn) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
-  try { return fn(); } finally { lock.releaseLock(); }
+  memoBuang_();
+  try { return fn(); } finally { memoBuang_(); naikkanVersiData_(); lock.releaseLock(); }
+}
+
+/* ---------- cache respons lintas request (CacheService) ----------
+ * Setiap penulisan lewat withLock_ menaikkan versi data, sehingga cache lama otomatis tidak terpakai.
+ * Perubahan manual langsung di sheet (bukan lewat aplikasi) terlihat paling lambat CACHE_RESPON_DETIK.
+ */
+var CACHE_RESPON_DETIK = 300;
+function versiData_() {
+  try {
+    var c = CacheService.getScriptCache(), v = c.get('zakat_ver');
+    if (!v) { v = String(Date.now()); c.put('zakat_ver', v, 21600); }
+    return v;
+  } catch (e) { return ''; }
+}
+function naikkanVersiData_() {
+  // Selalu naik (dipanggil di dalam script lock), jadi versi baru tidak mungkin sama dengan versi lama.
+  try {
+    var c = CacheService.getScriptCache(), cur = Number(c.get('zakat_ver')) || 0;
+    c.put('zakat_ver', String(Math.max(Date.now(), cur + 1)), 21600);
+  } catch (e) { /* cache opsional */ }
+}
+function cacheAmbil_(key) {
+  try { return CacheService.getScriptCache().get(key); } catch (e) { return null; }
+}
+function cacheSimpan_(key, str) {
+  if (str.length > 95000) return; // batas CacheService 100 KB per key: lewati, jangan crash
+  try { CacheService.getScriptCache().put(key, str, CACHE_RESPON_DETIK); } catch (e) { /* cache opsional */ }
 }
 
 /**

@@ -1,6 +1,14 @@
 /** Baca data sensus (read-only) dari spreadsheet SENSUS BBK02. Di-cache 5 menit. */
 
 function readSensus_(force) {
+  // dalam satu request web, sensus cukup dibuka/diurai sekali
+  if (!force && REQ_MEMO_ && REQ_MEMO_.__sensus) return REQ_MEMO_.__sensus;
+  var out = bacaSensus_(force);
+  if (REQ_MEMO_) REQ_MEMO_.__sensus = out;
+  return out;
+}
+
+function bacaSensus_(force) {
   var cache = CacheService.getScriptCache();
   if (!force) {
     var c = cache.get('sensus_v1');

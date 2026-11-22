@@ -19,11 +19,71 @@
   // =====================================================================
   var D = null, D_belumAll = false;
   ACT.belumAll = function () { D_belumAll = !D_belumAll; renderDash(); };
-  Z.viewDash = function (tahun) {
+  /** Pembaruan dari latar belakang tidak boleh merusak isian yang sedang diketik. */
+  function bolehRender() { var a = document.activeElement; return !(a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && Z.app.contains(a)); }
+  Z.viewDash = function (tahun, segar) {
     Z.loading('Menghitung rekap…');
-    Z.ensureBoot().then(function () { return api('dashboard', { tahun: tahun || S.tahun || S.boot.tahunAktif }); })
-      .then(function (d) { D = d; S.tahun = d.tahun; renderDash(); }).catch(Z.fail);
+    Z.ensureBoot().then(function () {
+      var t = Number(tahun || S.tahun || S.boot.tahunAktif);
+      var onD = function (d, dariCache) { D = d; S.tahun = d.tahun; if (dariCache || bolehRender()) renderDash(); };
+      return segar ? Z.apiSegar('dashboard', { tahun: t }).then(onD) : Z.apiCepat('dashboard', { tahun: t }, onD);
+    }).catch(Z.fail);
   };
+
+  // ---------- progres untuk jamaah (D-26) ----------
+  var HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  var BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  function persenBawah(a, b) { return b ? Math.floor(a * 100 / b) : 0; }
+  function barTeks(p) { var n = Math.max(0, Math.min(10, Math.floor(p / 10))); return new Array(n + 1).join('▓') + new Array(10 - n + 1).join('░'); }
+  function tglPanjang(s) {
+    var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+    if (!m) return String(s || '');
+    var hari = HARI[new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay()];
+    return hari + ', ' + (+m[3]) + ' ' + BULAN[+m[2] - 1] + ' ' + m[1] + (m[4] ? ' pukul ' + m[4] + '.' + m[5] : '');
+  }
+  /** Teks progres untuk grup WhatsApp jamaah: tanpa nominal, tanpa nama, tanpa emoji. Fungsi murni (dites di Node). */
+  Z.teksProgres = function (p, hijriah, kelompok) {
+    var pk = persenBawah(p.kkSudah, p.kkTotal), pj = persenBawah(p.jiwaSudah, p.jiwaTotal);
+    var h = p.hMinus === null || p.hMinus === undefined || p.hMinus < 0 ? '' : p.hMinus === 0 ? ' · Hari H' : ' · H-' + p.hMinus;
+    var tambah = [p.kkHariIni ? p.kkHariIni + ' KK' : '', p.jiwaHariIni ? p.jiwaHariIni + ' jiwa' : ''].filter(Boolean).join(' · ');
+    var baris = ['*Progres Zakat Fitrah ' + hijriah + '*', kelompok || '', tglPanjang(p.tanggal) + h, '',
+      'KK sudah zakat: ' + p.kkSudah + ' dari ' + p.kkTotal + ' (' + pk + '%)', barTeks(pk),
+      'Jiwa sudah zakat: ' + p.jiwaSudah + ' dari ' + p.jiwaTotal + ' (' + pj + '%)', barTeks(pj), ''];
+    if (tambah) baris.push('Hari ini bertambah ' + tambah + '.');
+    if (p.batasLewat) baris.push('Penerimaan zakat fitrah ' + hijriah + ' sudah ditutup. Jazakumullahu khoiro.');
+    else {
+      if (p.batasFitrah) baris.push('Batas zakat fitrah: ' + tglPanjang(p.batasFitrah) + ' (sebelum shalat Ied).');
+      baris.push('Bagi yang belum, silakan menghubungi amil.');
+    }
+    return baris.filter(function (x, i) { return x !== '' || i === 3 || i === 8; }).join('\n').replace(/\n{3,}/g, '\n\n');
+  };
+  ACT.bagiProgres = function () {
+    var t = Z.teksProgres(D.progres, D.hijriah, S.boot.kelompok);
+    Z.openModal('<div class="mh"><h2>Bagikan progres</h2><button type="button" class="btn sm" data-act="close" aria-label="Tutup">' + ICON.x + '</button></div>' +
+      '<p class="sub" style="margin:0">Tanpa nominal dan tanpa nama. Silakan kirim ke grup jamaah.</p>' +
+      '<label class="f"><span class="sr">Teks progres</span><textarea id="prTeks" class="fi" rows="13" readonly style="height:auto;line-height:1.5;font-family:inherit;white-space:pre-wrap">' + esc(t) + '</textarea></label>' +
+      '<div style="display:flex;gap:10px"><button type="button" class="btn" style="flex:1" data-act="salinProgres">Salin teks</button>' +
+      '<button type="button" class="btn pri" style="flex:2" data-act="waProgres">Kirim ke WhatsApp</button></div>');
+  };
+  ACT.waProgres = function () { window.open('https://wa.me/?text=' + encodeURIComponent($('#prTeks').value), '_blank'); };
+  ACT.salinProgres = function () {
+    var ta = $('#prTeks'), ok = function () { Z.toast('Teks progres disalin.'); };
+    var cadangan = function () { try { ta.select(); document.execCommand('copy'); ok(); } catch (e) { Z.toast('Tidak bisa menyalin otomatis. Tekan lama teksnya lalu salin.', true); } };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(ok, cadangan); else cadangan(); } catch (e) { cadangan(); }
+  };
+  function kpiProgres(d) {
+    var p = d.progres, f = d.fitrah;
+    var baris = function (label, a, b) {
+      var x = b ? Math.min(100, a * 100 / b) : 0;
+      return '<div style="display:flex;flex-direction:column;gap:6px"><span class="l">' + label + '</span><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="v num">' + a + '</span><span style="font-size:16px;font-weight:600;color:#A9C4BB">dari ' + b + ' · ' + persenBawah(a, b) + '%</span></div>' +
+        '<div class="bar" style="background:#24493F" role="img" aria-label="' + label + ': ' + a + ' dari ' + b + ' (' + persenBawah(a, b) + '%)"><i style="width:' + x + '%;background:#5FD4B4"></i></div></div>';
+    };
+    var hari = [p.kkHariIni ? '+' + p.kkHariIni + ' KK' : '', p.jiwaHariIni ? '+' + p.jiwaHariIni + ' jiwa' : ''].filter(Boolean).join(' · ');
+    return '<div class="kpi dark" style="gap:14px"><div style="display:flex;align-items:center;gap:10px"><span class="l" style="flex:1">Progres zakat fitrah</span>' +
+      (S.role !== 'amil' ? '<button type="button" class="btn sm noprint" data-act="bagiProgres">Bagikan progres</button>' : '') + '</div>' +
+      baris('KK sudah zakat (semua anggota)', p.kkSudah, p.kkTotal) + baris('Jiwa sensus sudah zakat', p.jiwaSudah, p.jiwaTotal) +
+      '<span class="h">' + (hari ? 'Hari ini ' + hari + ' · ' : '') + p.kkSebagian + ' KK sebagian · ditambah ' + f.sm + ' simpatisan &amp; ' + f.luar + ' JM luar · ' + f.kampung + ' jiwa zakat di kampung</span></div>';
+  }
 
   function renderDash() {
     var d = D, f = d.fitrah, c = d.config, admin = S.role === 'admin';
@@ -46,9 +106,9 @@
 
       // KPI
       '<section class="grid kpis" aria-label="Angka utama">' +
-      '<div class="kpi dark"><span class="l">Jiwa sensus yang sudah zakat fitrah</span><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="v num">' + f.jm + '</span><span style="font-size:18px;font-weight:600;color:#A9C4BB">dari ' + d.jiwaSensus + ' jiwa · ' + pct(d.partisipasi) + '</span></div>' +
+      (d.progres ? kpiProgres(d) : '<div class="kpi dark"><span class="l">Jiwa sensus yang sudah zakat fitrah</span><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="v num">' + f.jm + '</span><span style="font-size:18px;font-weight:600;color:#A9C4BB">dari ' + d.jiwaSensus + ' jiwa · ' + pct(d.partisipasi) + '</span></div>' +
       '<div class="bar" style="background:#24493F" role="img" aria-label="Progres ' + pct(d.partisipasi) + '"><i style="width:' + Math.min(100, d.partisipasi * 100) + '%;background:#5FD4B4"></i></div>' +
-      '<span class="h">' + d.kkSetor + (d.kkSensus ? ' dari ' + d.kkSensus : '') + ' KK sudah setor · ditambah ' + f.sm + ' simpatisan &amp; ' + f.luar + ' JM luar · ' + f.kampung + ' jiwa zakat di kampung</span></div>' +
+      '<span class="h">' + d.kkSetor + (d.kkSensus ? ' dari ' + d.kkSensus : '') + ' KK sudah setor · ditambah ' + f.sm + ' simpatisan &amp; ' + f.luar + ' JM luar · ' + f.kampung + ' jiwa zakat di kampung</span></div>') +
       kpi('Beras diterima', kgf(f.berasKg) + ' kg', f.berasSoq + ' soq', 'var(--brand)') +
       kpi('Titip uang zakat', rpShort(f.uangWajib), f.uangSoq + ' jiwa × ' + rp(d.harga), '#B4501B') +
       kpi('Zakat mal & tijaroh', rpShort(d.malTotal), d.malMuzakki + ' muzakki' + (mS.total ? ' · susulan ' + rpShort(mS.total) : '')) +
@@ -100,16 +160,27 @@
         '</tbody></table></div>',
         (admin || S.role === 'amil') ? '<button type="button" class="btn blue sm noprint" data-act="ubModal">' + ICON.plus + 'Catat serah ke UB</button>' : '') +
 
-      (d.belum ? card('Belum zakat fitrah', d.belum.filter(function (b) { return b.status === 'BELUM'; }).length + ' KK belum setor · ' + d.jiwaBelum + ' jiwa sensus belum tercatat',
+      (d.belum ? card('Belum zakat fitrah', d.belum.filter(function (b) { return b.status === 'BELUM'; }).length + ' KK belum setor · ' + d.jiwaBelum + ' jiwa sensus belum tercatat' + ((d.belumTanpaKK || []).length ? ' (termasuk ' + d.belumTanpaKK.length + ' jiwa tanpa KK)' : ''),
         '<div class="tbl"><table><thead><tr><th>Keluarga (KK)</th><th class="r">Jiwa sensus</th><th class="r">Belum</th><th>Anggota belum zakat</th><th>Status</th></tr></thead><tbody>' +
         d.belum.slice(0, D_belumAll ? d.belum.length : 15).map(function (b) { var ch = b.status === 'KURANG' ? ['red', 'Kurang ' + rp(b.kurangRp)] : b.status === 'SEBAGIAN' ? ['warn', 'Sebagian'] : ['red', 'Belum setor']; return '<tr><td><b>' + esc(b.nama) + '</b></td><td class="r">' + b.jiwa + '</td><td class="r"><b>' + b.belum + '</b></td><td class="tw">' + esc(b.anggota) + '</td><td><span class="chip ' + ch[0] + '">' + ch[1] + '</span></td></tr>'; }).join('') +
-        '</tbody></table></div>' + (d.belum.length > 15 ? '<div class="foot noprint"><button type="button" class="btn sm" data-act="belumAll">' + (D_belumAll ? 'Tampilkan 15 saja' : 'Tampilkan semua ' + d.belum.length + ' KK') + '</button></div>' : ''), f.kkKurang ? '<span class="chip red">' + f.kkKurang + ' kurang bayar · ' + rp(f.kurang) + '</span>' : '') : '') +
+        '</tbody></table></div>' + (d.belum.length > 15 ? '<div class="foot noprint"><button type="button" class="btn sm" data-act="belumAll">' + (D_belumAll ? 'Tampilkan 15 saja' : 'Tampilkan semua ' + d.belum.length + ' KK') + '</button></div>' : '') +
+        belumTanpaKK(d.belumTanpaKK || []), f.kkKurang ? '<span class="chip red">' + f.kkKurang + ' kurang bayar · ' + rp(f.kurang) + '</span>' : '') : '') +
 
       card('Setoran terbaru', '15 transaksi terakhir', setoranTable(d.terbaru, false), '<a class="btn sm noprint" href="#/setoran?tahun=' + d.tahun + '">Lihat semua</a>') +
       '</div>';
     Z.app.innerHTML = html;
     $('#dTahun').addEventListener('change', function (e) { S.tahun = Number(e.target.value); Z.viewDash(S.tahun); });
     $$('[data-bag]').forEach(function (inp) { inp.addEventListener('input', function () { hitungSisaBagian(inp.getAttribute('data-lp')); }); });
+  }
+  function belumTanpaKK(rows) {
+    if (!rows.length) return '';
+    return '<div class="ch" style="border-top:1px solid var(--line2)"><div class="tt"><h2 style="font-size:15px">Jiwa tanpa KK</h2><span class="sub">' + rows.length + ' jiwa · perantau, pendatang, atau mandiri. Tidak dihitung sebagai KK, tetap wajib zakat fitrah.</span></div></div>' +
+      '<div class="tbl"><table><thead><tr><th>Nama</th><th>Keberadaan</th><th>Status</th></tr></thead><tbody>' +
+      rows.slice(0, D_belumAll ? rows.length : 15).map(function (b) {
+        var ch = b.status === 'KURANG' ? ['red', 'Kurang ' + rp(b.kurangRp)] : ['red', 'Belum setor'];
+        return '<tr><td><b>' + esc(b.nama) + '</b></td><td>' + esc(b.keberadaan || '—') + '</td><td><span class="chip ' + ch[0] + '">' + ch[1] + '</span></td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      (rows.length > 15 ? '<div class="foot noprint"><button type="button" class="btn sm" data-act="belumAll">' + (D_belumAll ? 'Tampilkan 15 saja' : 'Tampilkan semua ' + rows.length + ' jiwa') + '</button></div>' : '');
   }
   function keChip(ke) { return ke === 'Kelompok' ? 'mint' : ke === 'Desa' ? 'purple' : 'blue'; }
   function miniBox(bg, fg, l, v, h) { return '<div style="background:' + bg + ';border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:' + fg + ';font-weight:600">' + l + '</span><strong style="font-size:22px">' + v + '</strong><span class="sub">' + h + '</span></div>'; }
@@ -152,7 +223,7 @@
     api('simpanBagianAmil', { tahun: D.tahun, lampiran: lp, items: items, catatan: $('#bagCat_' + lp).value })
       .then(function () { Z.toast('Hasil musyawarah tersimpan.'); Z.viewDash(D.tahun); }).catch(function (e) { el.disabled = false; Z.fail(e); });
   };
-  ACT.dReload = function () { Z.viewDash(D ? D.tahun : null); };
+  ACT.dReload = function () { Z.viewDash(D ? D.tahun : null, true); };
 
   ACT.ubModal = function () {
     var admin = S.role === 'admin';
@@ -198,7 +269,7 @@
             '<button type="button" class="btn sm danger" data-act="hapusSetoran" data-id="' + esc(t.id) + '" data-kelas="' + t.kelas + '" data-nama="' + esc(t.nama) + '">Hapus</button></td>';
         }
         return '<tr><td style="color:var(--muted)">' + esc(Z.tglId(t.tanggal)) + '</td><td><b>' + esc(t.nama) + '</b>' + (t.match && t.match !== 'COCOK' && t.match !== 'MANUAL' ? ' <span class="chip warn" title="Nama belum cocok ke sensus">cek</span>' : '') + '</td>' +
-          '<td><span class="chip ' + j[0] + '">' + j[1] + '</span></td><td>' + jiwa + '</td><td class="r num"><b>' + nilai + '</b></td><td class="r num">' + sel + '</td><td style="color:var(--ink2)">' + esc(t.amil || '—') + '</td>' +
+          '<td><span class="chip ' + j[0] + '">' + j[1] + '</span></td><td>' + jiwa + '</td><td class="r num"><b>' + nilai + '</b></td><td class="r num">' + sel + '</td><td style="color:var(--ink2)">' + esc(t.amil || '—') + (t.dicatat && t.dicatat !== t.amil ? '<span class="sub" style="display:block;font-size:12px">dicatat oleh ' + esc(t.dicatat) + '</span>' : '') + '</td>' +
           (withActions ? '<td><span class="chip">' + esc(t.sumber === 'IMPOR' ? 'Impor' : 'Aplikasi') + '</span></td>' + act : '') + '</tr>';
       }).join('') + '</tbody></table></div>';
   }
@@ -208,7 +279,9 @@
   // =====================================================================
   Z.viewTren = function () {
     Z.loading('Menyusun tren…');
-    Promise.all([Z.ensureBoot(), api('tren')]).then(function (r) { renderTren(r[1].filter(function (x) { return !x.error && (x.fitrah.setoran || x.malTotal); })); }).catch(Z.fail);
+    Z.ensureBoot().then(function () {
+      return Z.apiCepat('tren', undefined, function (all) { renderTren(all.filter(function (x) { return !x.error && (x.fitrah.setoran || x.malTotal); })); });
+    }).catch(Z.fail);
   };
   function delta(a, b, poin) {
     if (b === undefined || b === null) return { t: '—', up: null };
@@ -302,8 +375,10 @@
   var DS = { kelas: '', q: '', rows: [] };
   Z.viewSetoran = function (tahun) {
     Z.loading('Memuat data setoran…');
-    Z.ensureBoot().then(function () { S.tahun = Number(tahun || S.tahun || S.boot.tahunAktif); return api('daftarSetoran', { tahun: S.tahun }); })
-      .then(function (rows) { DS.rows = rows; renderSetoran(); }).catch(Z.fail);
+    Z.ensureBoot().then(function () {
+      S.tahun = Number(tahun || S.tahun || S.boot.tahunAktif);
+      return Z.apiCepat('daftarSetoran', { tahun: S.tahun }, function (rows, dariCache) { DS.rows = rows; if (dariCache || bolehRender()) renderSetoran(); });
+    }).catch(Z.fail);
   };
   function renderSetoran() {
     var q = DS.q.toLowerCase();
@@ -321,8 +396,8 @@
   }
   ACT.sKelas = function (el) { DS.kelas = el.getAttribute('data-k'); renderSetoran(); };
   ACT.sCsv = function () {
-    csv('setoran-zakat-' + S.tahun + '.csv', [['Tanggal', 'Muzakki', 'Kelas', 'Jenis', 'Lampiran', 'JM', 'SM', 'JM luar', 'Kg beras', 'Wajib (Rp)', 'Diterima/Nominal (Rp)', 'Selisih (Rp)', 'Tujuan lebih', 'Status', 'Amil', 'Sumber', 'Catatan']].concat(
-      DS.rows.map(function (r) { return [r.tanggal, r.nama, r.kelas, r.jenis, r.lampiran || '', r.jiwa ? r.jiwa.jm : '', r.jiwa ? r.jiwa.sm : '', r.jiwa ? r.jiwa.luar : '', r.kg || '', r.wajib || '', r.kelas === 'FITRAH' ? r.diterima : r.nominal, r.selisih || '', r.tujuan || '', r.status || '', r.amil, r.sumber, r.catatan]; })));
+    csv('setoran-zakat-' + S.tahun + '.csv', [['Tanggal', 'Muzakki', 'Kelas', 'Jenis', 'Lampiran', 'JM', 'SM', 'JM luar', 'Kg beras', 'Wajib (Rp)', 'Diterima/Nominal (Rp)', 'Selisih (Rp)', 'Tujuan lebih', 'Status', 'Amil', 'Dicatat oleh', 'Sumber', 'Catatan']].concat(
+      DS.rows.map(function (r) { return [r.tanggal, r.nama, r.kelas, r.jenis, r.lampiran || '', r.jiwa ? r.jiwa.jm : '', r.jiwa ? r.jiwa.sm : '', r.jiwa ? r.jiwa.luar : '', r.kg || '', r.wajib || '', r.kelas === 'FITRAH' ? r.diterima : r.nominal, r.selisih || '', r.tujuan || '', r.status || '', r.amil, r.dicatat || '', r.sumber, r.catatan]; })));
   };
   ACT.hapusSetoran = function (el) {
     if (!confirm('Hapus setoran ' + el.getAttribute('data-nama') + '? Data ditandai terhapus dan tidak dihitung lagi.')) return;

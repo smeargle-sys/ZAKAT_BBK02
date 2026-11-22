@@ -118,6 +118,10 @@
     var list = F_smList.filter(function (m) { return !q || m.nama.toLowerCase().indexOf(q) >= 0; }).slice(0, 12);
     var el = $('#smRes'); if (!el) return;
     el.innerHTML = list.length ? list.map(function (m) {
+      // D-25: yang sudah zakat tahun ini tetap tampil, tapi tidak bisa dipilih (kecuali milik setoran yang sedang diubah)
+      if (m.sudah && m.idSetoran !== F.editId) {
+        return '<button type="button" class="done" disabled aria-disabled="true"><span class="nm"><b>' + esc(m.nama) + '</b><span>' + esc(m.kkNama ? 'Terkait KK ' + m.kkNama : 'Berdiri sendiri') + '</span></span><span class="chip ok">Sudah zakat</span></button>';
+      }
       return '<button type="button" data-act="smPick" data-id="' + esc(m.id) + '" class="' + (F.smPilih === m.id ? 'on' : '') + '" aria-pressed="' + (F.smPilih === m.id) + '"><span class="nm"><b>' + esc(m.nama) + '</b><span>' + esc(m.kkNama ? 'Terkait KK ' + m.kkNama : 'Berdiri sendiri') + '</span></span>' + (F.smPilih === m.id ? ICON.check : '') + '</button>';
     }).join('') : '<p class="sub" style="padding:12px;margin:0">Belum ada simpatisan. Tambahkan simpatisan baru.</p>';
   }

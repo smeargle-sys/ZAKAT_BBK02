@@ -29,7 +29,7 @@ function kkList_(p, s) {
     var nSudah = ang.filter(function (a) { return a.sudah; }).length;
     var smKK = sm.filter(function (m) { return m.idKeluarga === id; }).map(function (m) { return { id: m.id, nama: m.nama, hubungan: m.hubungan, sudah: !!sudahSM[m.id] }; });
     var status = kurang[id] ? 'KURANG' : nSudah === 0 ? (kkSetor[id] ? 'SEBAGIAN' : 'BELUM') : nSudah < ang.length ? 'SEBAGIAN' : 'SUDAH';
-    return { id: id, nama: k.nama, alamat: k.alamat, anggota: ang, simpatisan: smKK, jiwa: ang.length, sudah: nSudah, status: status, kurangRp: kurang[id] || 0 };
+    return { id: id, nama: k.nama, tanpaKK: !!k.tanpaKK, anggota: ang, simpatisan: smKK, jiwa: ang.length, sudah: nSudah, status: status, kurangRp: kurang[id] || 0 };
   }).sort(function (a, b) { return normName_(a.nama).join(' ') < normName_(b.nama).join(' ') ? -1 : 1; });
 
   var saya = null;
@@ -118,7 +118,8 @@ function simpanFitrah_(p, s) {
       tJ.rows.filter(function (r) { return String(r.ID_Setoran) === editId && r.Dihapus !== 'Y'; }).forEach(function (r) { updateObject_(tJ, r, { Dihapus: 'Y' }); });
       id = editId;
     } else {
-      id = newId_('FT'); obj.ID = id; obj.Waktu_Input = nowIso_();
+      // D-24: siapa yang mencatat (bisa admin atas nama amil). Tidak diubah saat setoran diubah.
+      id = newId_('FT'); obj.ID = id; obj.Waktu_Input = nowIso_(); obj.Dicatat_Oleh = s.nama || s.role;
       appendObjects_('Setoran_Fitrah', [obj]);
     }
     appendObjects_('Setoran_Fitrah_Jiwa',
@@ -129,9 +130,9 @@ function simpanFitrah_(p, s) {
     if (p.fidyah && num_(p.fidyah.nominal) > 0) {
       appendObjects_('Zakat_Lain', [{ ID: newId_('FD'), Tahun: tahun, Tanggal: tanggal, Waktu_Input: nowIso_(), Jenis: 'FIDYAH', Lampiran: '', Ref_Tipe: 'KK', Ref_ID: idKeluarga,
         Nama: namaMuzakki, ID_Keluarga: idKeluarga, Nominal: Math.round(num_(p.fidyah.nominal)), Hari_Fidyah: num_(p.fidyah.hari) || '', Cara_Bayar: 'Tunai',
-        ID_Amil: idAmil, Nama_Amil: amil ? amil.nama : '', Catatan: 'Bersama setoran fitrah ' + id, Sumber: 'APP' }]);
+        ID_Amil: idAmil, Nama_Amil: amil ? amil.nama : '', Catatan: 'Bersama setoran fitrah ' + id, Sumber: 'APP', Dicatat_Oleh: s.nama || s.role }]);
     }
-    log_(s, editId ? 'ubahFitrah' : 'simpanFitrah', { id: id, kk: namaMuzakki, jiwa: total, jenis: jenis });
+    log_(s, editId ? 'ubahFitrah' : 'simpanFitrah', { id: id, kk: namaMuzakki, jiwa: total, jenis: jenis, amil: amil ? amil.nama : '' });
     return { id: id, wajib: wajib, selisih: selisih, status: status, tujuan: tujuan, kg: kg };
   });
 }
@@ -181,10 +182,10 @@ function simpanLain_(p, s) {
       obj.Diubah_Oleh = s.nama || s.role; obj.Diubah_Waktu = nowIso_();
       updateObject_(t, row, obj); obj.ID = row.ID;
     } else {
-      obj.ID = newId_(jenis === 'FIDYAH' ? 'FD' : 'ML'); obj.Waktu_Input = nowIso_();
+      obj.ID = newId_(jenis === 'FIDYAH' ? 'FD' : 'ML'); obj.Waktu_Input = nowIso_(); obj.Dicatat_Oleh = s.nama || s.role;
       appendObjects_('Zakat_Lain', [obj]);
     }
-    log_(s, 'simpanLain', { id: obj.ID, jenis: jenis, nominal: nominal, lampiran: lampiran });
+    log_(s, 'simpanLain', { id: obj.ID, jenis: jenis, nominal: nominal, lampiran: lampiran, amil: amil ? amil.nama : '' });
     return { id: obj.ID, lampiran: lampiran, nominal: nominal };
   });
 }
@@ -205,11 +206,11 @@ function daftarSetoran_(p) {
   var f = setoranFitrah_(tahun).map(function (r) {
     return { id: String(r.ID), kelas: 'FITRAH', waktu: String(r.Waktu_Input || r.Tanggal), tanggal: toDateStr_(r.Tanggal), nama: String(r.Nama_Muzakki), jenis: String(r.Jenis), idKeluarga: String(r.ID_Keluarga || ''), match: String(r.Match_Status || ''),
       jiwa: { jm: num_(r.Jiwa_JM), sm: num_(r.Jiwa_SM), luar: num_(r.Jiwa_Luar) }, kg: num_(r.Kg_Beras), wajib: num_(r.Wajib_Rp), diterima: num_(r.Diterima_Rp),
-      selisih: num_(r.Selisih_Rp), tujuan: String(r.Tujuan_Lebih || ''), status: String(r.Status_Bayar || ''), amil: String(r.Nama_Amil || ''), sumber: String(r.Sumber || ''), catatan: String(r.Catatan || '') };
+      selisih: num_(r.Selisih_Rp), tujuan: String(r.Tujuan_Lebih || ''), status: String(r.Status_Bayar || ''), amil: String(r.Nama_Amil || ''), dicatat: String(r.Dicatat_Oleh || ''), sumber: String(r.Sumber || ''), catatan: String(r.Catatan || '') };
   });
   var l = zakatLain_(tahun).map(function (r) {
     return { id: String(r.ID), kelas: 'LAIN', waktu: String(r.Waktu_Input || r.Tanggal), tanggal: toDateStr_(r.Tanggal), nama: String(r.Nama), jenis: String(r.Jenis),
-      lampiran: String(r.Lampiran || ''), nominal: num_(r.Nominal), hari: num_(r.Hari_Fidyah), amil: String(r.Nama_Amil || ''), sumber: String(r.Sumber || ''), catatan: String(r.Catatan || '') };
+      lampiran: String(r.Lampiran || ''), nominal: num_(r.Nominal), hari: num_(r.Hari_Fidyah), amil: String(r.Nama_Amil || ''), dicatat: String(r.Dicatat_Oleh || ''), sumber: String(r.Sumber || ''), catatan: String(r.Catatan || '') };
   });
   var all = f.concat(l);
   if (p.kelas) all = all.filter(function (x) { return x.kelas === p.kelas; });

@@ -35,6 +35,8 @@
   var device = store.get('zakat_device') || (function () { var d = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36); store.set('zakat_device', d); return d; })();
   var app = $('#app');
 
+  // Aksi yang hanya membaca. Aksi lain yang berhasil dianggap mengubah data → cache memori dikosongkan.
+  var BACA = { ping: 1, login: 1, logout: 1, bootstrap: 1, kkList: 1, cariMuzakki: 1, getFitrah: 1, daftarSimpatisan: 1, dashboard: 1, tren: 1, daftarSetoran: 1, getConfig: 1, daftarPengguna: 1 };
   function api(action, params) {
     var body = Object.assign({ action: action, token: S.token }, params || {});
     return fetch(window.ZAKAT_CONFIG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
@@ -44,8 +46,53 @@
           if (j.sesiHabis) { logoutLocal(); toast('Sesi berakhir, silakan masuk lagi.', true); go('#/login'); }
           throw new Error(j.error || 'Gagal');
         }
+        if (!BACA[action]) RC = {};
         return j.data;
       });
+  }
+
+  /*
+   * Cache respons baca di MEMORI saja (tidak di localStorage: data setoran tidak boleh tersimpan di HP).
+   * apiCepat: bila halaman pernah dibuka, langsung tampilkan data terakhir, lalu ambil versi terbaru
+   * di latar belakang dan render ulang hanya bila datanya berubah dan pengguna masih di halaman yang sama.
+   */
+  var RC = {}, SEGAR_MS = 20000;
+  function rcKey(action, params) { return action + '|' + JSON.stringify(params || {}); }
+  function apiCepat(action, params, onData) {
+    var k = rcKey(action, params), hit = RC[k], h0 = location.hash;
+    if (hit) {
+      onData(hit.data, true);
+      if (Date.now() - hit.t < SEGAR_MS) return Promise.resolve(hit.data);
+    }
+    return api(action, params).then(function (d) {
+      var baru = JSON.stringify(d), lama = hit ? hit.s : null;
+      RC[k] = { data: d, s: baru, t: Date.now() };
+      if (location.hash === h0 && baru !== lama) onData(d, false);
+      return d;
+    }, function (e) { if (!hit) throw e; });
+  }
+  /** Ambil ulang tanpa cache (tombol Muat ulang): lewati cache memori dan cache server. */
+  function apiSegar(action, params) {
+    return api(action, Object.assign({ segar: true }, params || {})).then(function (d) {
+      RC[rcKey(action, params)] = { data: d, s: JSON.stringify(d), t: Date.now() };
+      return d;
+    });
+  }
+  /** Muat diam-diam halaman yang kemungkinan dibuka berikutnya, supaya terasa instan. */
+  var prefetched = false;
+  function prefetch() {
+    if (prefetched || !S.token) return;
+    prefetched = true;
+    setTimeout(function () {
+      var t = S.tahun || (S.boot && S.boot.tahunAktif);
+      var list = [['dashboard', { tahun: t }]];
+      if (S.role !== 'amil') list.push(['tren', undefined]);
+      list.forEach(function (x) {
+        var k = rcKey(x[0], x[1]);
+        if (RC[k]) return;
+        api(x[0], x[1]).then(function (d) { if (!RC[k]) RC[k] = { data: d, s: JSON.stringify(d), t: Date.now() }; }).catch(function () { });
+      });
+    }, 1200);
   }
 
   function toast(msg, err) {
@@ -60,7 +107,7 @@
   function closeModal() { var m = $('#modal'); m.classList.add('hidden'); m.innerHTML = ''; }
   $('#modal').addEventListener('click', function (e) { if (e.target.id === 'modal') closeModal(); });
 
-  function logoutLocal() { ['zakat_token', 'zakat_role', 'zakat_nama', 'zakat_idAmil'].forEach(store.del); S.token = S.role = S.nama = S.idAmil = null; S.boot = null; S.kk = null; }
+  function logoutLocal() { ['zakat_token', 'zakat_role', 'zakat_nama', 'zakat_idAmil'].forEach(store.del); S.token = S.role = S.nama = S.idAmil = null; S.boot = null; S.kk = null; RC = {}; prefetched = false; }
 
   // ---------- topbar ----------
   var NAV = [
@@ -83,7 +130,7 @@
 
   function ensureBoot(tahun) {
     if (S.boot && (!tahun || S.boot.config.Tahun === Number(tahun))) return Promise.resolve(S.boot);
-    return api('bootstrap', tahun ? { tahun: tahun } : {}).then(function (b) { S.boot = b; if (!S.tahun) S.tahun = b.tahunAktif; return b; });
+    return api('bootstrap', tahun ? { tahun: tahun } : {}).then(function (b) { S.boot = b; if (!S.tahun) S.tahun = b.tahunAktif; prefetch(); return b; });
   }
 
   // ---------- router ----------
@@ -179,8 +226,14 @@
   // =====================================================================
   var AH = { filter: 'SEMUA', q: '' };
   function viewAmil() {
-    loading('Memuat daftar keluarga…');
-    Promise.all([ensureBoot(), api('kkList')]).then(function (r) { S.kk = r[1]; renderAmil(); }).catch(fail);
+    if (!RC[rcKey('kkList')]) loading('Memuat daftar keluarga…');
+    ensureBoot().then(function () {
+      return apiCepat('kkList', undefined, function (d) {
+        S.kk = d;
+        // jangan merusak ketikan di kolom cari: cukup perbarui daftarnya
+        if (document.activeElement && document.activeElement.id === 'kkQ' && $('#kkList')) renderKKList(); else renderAmil();
+      });
+    }).catch(fail);
   }
   function batasInfo(b) {
     var c = b.config;
@@ -224,7 +277,7 @@
     var chip = { BELUM: ['red', 'Belum'], SEBAGIAN: ['warn', 'Sebagian'], SUDAH: ['ok', 'Sudah'], KURANG: ['red', 'Kurang bayar'] };
     $('#kkList').innerHTML = rows.length ? rows.map(function (k) {
       var luar = k.anggota.filter(function (a) { return a.keberadaan && a.keberadaan !== 'Menetap'; }).length;
-      var info = k.jiwa + ' jiwa' + (luar ? ' · ' + luar + ' di luar' : '') + (k.simpatisan.length ? ' · +' + k.simpatisan.length + ' SM terkait' : '') + (k.kurangRp ? ' · kurang ' + rp(k.kurangRp) : '');
+      var info = (k.tanpaKK ? 'Tanpa KK · ' : '') + k.jiwa + ' jiwa' + (luar ? ' · ' + luar + ' di luar' : '') + (k.simpatisan.length ? ' · +' + k.simpatisan.length + ' SM terkait' : '') + (k.kurangRp ? ' · kurang ' + rp(k.kurangRp) : '');
       var ch = chip[k.status];
       return '<li><a href="#/fitrah/' + encodeURIComponent(k.id) + '"><span class="nm"><b>' + esc(k.nama) + '</b><span>' + esc(info) + '</span></span>' +
         '<span class="chip ' + ch[0] + '">' + ch[1] + (k.status === 'SEBAGIAN' || k.status === 'SUDAH' ? ' ' + k.sudah + '/' + k.jiwa : '') + '</span>' + ICON.chev + '</a></li>';
@@ -233,7 +286,7 @@
   ACT.kkFilter = function (el) { AH.filter = el.getAttribute('data-f'); renderAmil(); };
 
   // (bagian lain ditambahkan di bawah)
-  window.__Z = { $: $, $$: $$, esc: esc, nf: nf, kgf: kgf, rp: rp, rpShort: rpShort, pct: pct, parseNum: parseNum, today: today, tglId: tglId, store: store, ICON: ICON, S: S, api: api, toast: toast, fail: fail, loading: loading, go: go, openModal: openModal, closeModal: closeModal, ACT: ACT, ensureBoot: ensureBoot, batasInfo: batasInfo, app: app };
+  window.__Z = { $: $, $$: $$, esc: esc, nf: nf, kgf: kgf, rp: rp, rpShort: rpShort, pct: pct, parseNum: parseNum, today: today, tglId: tglId, store: store, ICON: ICON, S: S, api: api, toast: toast, fail: fail, loading: loading, go: go, openModal: openModal, closeModal: closeModal, ACT: ACT, ensureBoot: ensureBoot, apiCepat: apiCepat, apiSegar: apiSegar, batasInfo: batasInfo, app: app };
 
   // placeholder, diisi oleh app2.js
   function viewFitrah(id, q) { window.__Z.viewFitrah(id, q); }
