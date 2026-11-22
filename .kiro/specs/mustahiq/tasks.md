@@ -34,5 +34,5 @@ Rincian teknis ada di `docs/handoff/2026-11-22-desain-mustahiq.md` (Model data, 
 - [x] 14. Bug: mengubah setoran tahun lalu tidak lagi memindahkannya ke tahun aktif (D-38).
 
 ## Rilis
-- [ ] 11. Deploy: `clasp push` → versi baru → `update-deployment` ke ID produksi. 👤 Jalankan `setupZakat` sekali (sheet baru).
+- [~] 11. Deploy (selesai via clasp: versi 6 @ ID produksi; sisa 👤 setupZakat): `clasp push` → versi baru → `update-deployment` ke ID produksi. 👤 Jalankan `setupZakat` sekali (sheet baru).
 - [x] 12. Skenario UAT di `docs/panduan/uat-fase-3.md` + laporan di `docs/handoff/`.
