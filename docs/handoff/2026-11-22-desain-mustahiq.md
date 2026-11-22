@@ -78,6 +78,18 @@ ID baru: `MS-` (mustahiq), `MSR-` (serah).
 - **Kartu kecil "Penyaluran mustahiq"** (admin & pengurus): *12 dari 41 KK sudah diserahkan · 18 dari 146 soq*, dengan tautan ke menu Mustahiq. Amil tidak melihat kartu ini.
 - **Tabel pembagian fitrah:** baris Mustahiq diberi keterangan "106 jiwa · 1,38 soq/jiwa".
 
+## Laporan resmi (D-36, tambahan dari pemilik)
+Format mengikuti lampiran laporan 2025 dari pemilik. Hanya formatnya yang ditiru: nama asli di lampiran **tidak** disalin ke repo/mockup. Menu baru **Laporan** (`#/laporan?tahun=`, admin & pengurus) berisi pilihan laporan dan tombol **Cetak / Simpan PDF** (dialog cetak browser):
+
+| Laporan | Kertas | Isi |
+|---|---|---|
+| Muzakki Zakat Fitrah | A4 mendatar | Baris per setoran (KK sensus / SM berdiri sendiri), urut nama: No, Nama, Amil yang menerima, JM BBK, JM luar titip zakat, SM, Total (soq), Jenis titipan (Titip Uang biru / Beras / Zakat di Kampung). Baris total "Jamaah + SM yg Zakat (- Zakat di Kampung)". Tabel pembagian 40/45/11/3/1 (sisa terbesar). Penandatangan |
+| Penerimaan & Pembagian Zakat Mal Tijaroh | A4 | A Penerimaan (No, Nama, Kelompok, Jumlah, Keterangan MAL/TIJAROH/MAL + TIJAROH), B Pembagian, C Disetor ke Desa, D Disetor ke Daerah, penandatangan. Lampiran Susulan dicetak terpisah dengan format sama |
+| Daftar Mustahiq Daerah | A4 | Kepala "DAFTAR MUSTAHIQ DAERAH TANGERANG SELATAN / KELOMPOK : 2 / DESA : BABAKAN / TAHUN". Per jiwa, urut per KK: kepala keluarga (Hubungan A) **tebal** lalu anggota, kemudian jamaah tanpa KK, lalu luar sensus. Kolom kategori Miskin / Faqir / Ghorim / Mualaf / Ibnu Sabil berisi "1"/"-", kolom Sabilillah hanya bila ada. Total per kategori + jumlah jiwa. Penandatangan |
+| Lembar penyerahan beras | A4 | Per KK: jiwa, asnaf, soq, kg, kolom tanda tangan penerima |
+
+**Penandatangan:** kolom baru `Penandatangan` (JSON `[{jabatan, nama}]`, kanan) di `Config_Tahun`, diedit di Konfigurasi, disalin oleh *Tahun baru*. Default jabatan (tanpa nama) mengikuti lampiran 2025: KI, KU, Mubaligh, WK, PNB, PNB, WK KU, (kosong), PNKB Kelompok. Header kelompok/desa/daerah diambil dari `APP` (`KELOMPOK_NO`, `DESA`, `DAERAH`).
+
 ## Privasi
 - **Status "Perlu Dibantu" (kandidat):** hanya dikirim ke **admin**.
 - **Daftar mustahiq:** dikirim ke admin & pengurus. Amil tidak menerima apa pun (route ditolak).

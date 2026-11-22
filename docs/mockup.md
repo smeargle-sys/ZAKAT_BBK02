@@ -17,6 +17,10 @@
 | Admin · Panel Tambah Simpatisan | modal di Konfigurasi & form fitrah | pilih KK dari sensus atau berdiri sendiri |
 | Admin · Mustahiq: daftar, pembagian 45% per jiwa & penyerahan | `#/mustahiq` (baru, D-35) | kandidat *Perlu Dibantu* (admin saja), daftar per KK + asnaf per jiwa, soq bulat per KK, tandai diserahkan. Pengurus: tanpa kandidat & tombol ubah. Amil: tidak ada menu |
 | Admin · Panel Tambah Penerima Luar Sensus | modal di `#/mustahiq` | nama, jumlah jiwa, asnaf, catatan, perkiraan bagian |
-| Cetak · Daftar Penerimaan Zakat Fitrah (A4) | cetak dari `#/mustahiq` | No, KK/penerima, asnaf, jiwa, soq, kg, tanda tangan + blok tanda tangan pengurus |
+| Cetak · Lembar Penyerahan Beras Mustahiq per KK (A4) | cetak dari `#/mustahiq` | No, KK/penerima, asnaf, jiwa, soq, kg, tanda tangan penerima + penandatangan |
+| Laporan · Muzakki Zakat Fitrah (A4 mendatar) | `#/laporan` (D-36) | format lampiran 2025: per keluarga, JM BBK / JM luar / SM / total, jenis titipan, pembagian |
+| Laporan · Penerimaan & Pembagian Zakat Mal Tijaroh (A4) | `#/laporan` (D-36) | bagian A–D, Lampiran Utama & Susulan |
+| Laporan · Daftar Mustahiq per jiwa (A4) | `#/laporan` & `#/mustahiq` (D-36) | urut per KK, kepala keluarga tebal, kolom kategori |
+| Admin · Penandatangan laporan | bagian baru di `#/config` | jabatan + nama per tahun, urutan = posisi |
 
 Desain layar baru dibuat konsultan di canvas yang sama (artboard baru), lalu ditautkan di tabel ini.
