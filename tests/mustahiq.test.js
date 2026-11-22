@@ -211,4 +211,27 @@ r=g.call({action:'simpanPenandatangan',token:admin,tahun:T,list:[{jabatan:'KI KE
 r=g.call({action:'simpanConfig',token:admin,config:Object.assign({},cfgLengkap,{Status:'BUKA'})}); assert(r.ok,r.error);
 assert.strictEqual(g.cfg_(T).Status,'BUKA','buka kembali berhasil'); assert.notStrictEqual(g.cfg_(T).Harga_Soq,99000,'membuka kembali tidak ikut mengubah harga');
 r=g.call({action:'simpanAmil',token:admin,tahun:T,amil:{nama:'Amil Baru Fiktif',saham:1}}); assert(r.ok,'setelah dibuka, amil bisa diubah: '+r.error);
+
+// ---------- D-45: ubah setoran lama setelah anggota pindah KK / hilang dari sensus ----------
+{
+  const ss3=mock.sensusSS(), g3=mock(ss3); g3.setupZakat();
+  g3.simpanPengguna_({user:{nama:'Admin Tiga',peran:'ADMIN',pin:'111111'}},null);
+  const ad=g3.call({action:'login',pin:'111111',device:'y'}).data.token;
+  g3.call({action:'simpanAmil',token:ad,tahun:2027,amil:{nama:'Amil Uji',saham:1,pin:'222222'}});
+  const am=g3.daftarAmil_(2027)[0];
+  const sen3=g3.readSensus_(); const kk3={}; sen3.jamaah.filter(j=>j.kk).forEach(j=>{(kk3[j.kk]=kk3[j.kk]||[]).push(j);});
+  const kel=Object.values(kk3).find(a=>a.length>=3);
+  let x=g3.call({action:'simpanFitrah',token:ad,idAmil:am.id,idKeluarga:kel[0].kk,jm:kel.map(j=>j.id),jenis:'BERAS'}); assert(x.ok,x.error);
+  const idS=x.data.id, pindah=kel[1], hilang=kel[2], kkLain=Object.keys(kk3).find(k=>k!==kel[0].kk);
+  const sh=ss3.getSheetByName('Jamaah'), hd=sh.data[0], iId=hd.indexOf('ID Jamaah'), iKK=hd.indexOf('ID Keluarga');
+  sh.data.forEach(r=>{ if(r[iId]===pindah.id) r[iKK]=kkLain; }); sh.data=sh.data.filter(r=>r[iId]!==hilang.id);
+  g3.readSensus_(true);
+  const ed=g3.call({action:'getFitrah',token:ad,id:idS}).data;
+  assert.strictEqual(ed.nama[hilang.id],hilang.nama,'getFitrah mengirim nama jiwa');
+  // admin menyimpan ulang dengan jiwa yang sama (form Ubah kini tetap mengirim jiwa yang pindah/hilang)
+  x=g3.call({action:'simpanFitrah',token:ad,id:idS,idAmil:am.id,idKeluarga:kel[0].kk,jm:ed.jm,jenis:'UANG',diterima:kel.length*40000}); assert(x.ok,x.error);
+  const rows=g3.readTable_('Setoran_Fitrah_Jiwa').rows.filter(r=>r.ID_Setoran===idS&&r.Dihapus!=='Y');
+  assert.strictEqual(rows.length,kel.length,'tidak ada jiwa yang hilang');
+  assert.strictEqual(rows.find(r=>r.Ref_ID===hilang.id).Nama,hilang.nama,'nama jamaah yang tidak ada di sensus tetap');
+}
 console.log('mustahiq: lulus');

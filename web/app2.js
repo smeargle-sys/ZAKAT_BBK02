@@ -22,8 +22,10 @@
 
   function initF(kkId, ed) {
     var b = S.boot, kk = kkId === '_sm' ? null : S.kk.list.filter(function (k) { return k.id === kkId; })[0];
-    if (kkId !== '_sm' && !kk) throw new Error('Keluarga tidak ditemukan di sensus.');
     var s = ed ? ed.setoran : null;
+    // D-45: setoran lama yang KK-nya sudah tidak ada di sensus tetap bisa diubah
+    if (kkId !== '_sm' && !kk && ed) kk = { id: kkId, nama: String(s.Nama_Muzakki || ''), anggota: [], simpatisan: [], hilang: true };
+    if (kkId !== '_sm' && !kk) throw new Error('Keluarga tidak ditemukan di sensus.');
     F = {
       mode: kkId === '_sm' ? 'SM' : 'KK', kk: kk, editId: s ? s.ID : '',
       jm: {}, sm: {}, luar: s ? Number(s.Jiwa_Luar) || 0 : 0, luarNama: '',
@@ -33,6 +35,20 @@
     };
     if (kk) kk.anggota.forEach(function (a) { var mine = ed && ed.jm.indexOf(a.id) >= 0; if (mine || (!ed && !a.sudah)) F.jm[a.id] = true; });
     if (ed) ed.sm.forEach(function (id) { F.sm[id] = true; });
+    // D-45: jiwa yang tercatat di setoran ini tetapi sudah pindah KK / tidak ada di sensus tetap tampil & tercentang,
+    // supaya tidak terhapus diam-diam saat setoran disimpan ulang.
+    F.pindah = []; F.smLain = [];
+    if (kk && ed) {
+      var di = {}; kk.anggota.forEach(function (a) { di[a.id] = 1; });
+      ed.jm.forEach(function (id) {
+        if (di[id]) return;
+        var baru = S.kk.list.filter(function (k) { return k.anggota.some(function (a) { return a.id === id; }); })[0];
+        F.jm[id] = true;
+        F.pindah.push({ id: id, nama: (ed.nama && ed.nama[id]) || id, ket: baru ? (baru.tanpaKK ? 'Sekarang tanpa KK di sensus' : 'Pindah ke KK ' + baru.nama) : 'Tidak ada lagi di sensus' });
+      });
+      var smDi = {}; kk.simpatisan.forEach(function (m) { smDi[m.id] = 1; });
+      ed.sm.forEach(function (id) { if (!smDi[id]) F.smLain.push({ id: id, nama: (ed.nama && ed.nama[id]) || id }); });
+    }
     if (F.mode === 'SM' && ed && ed.sm.length) F.smPilih = ed.sm[0];
   }
 
@@ -56,6 +72,16 @@
         return '<label class="check' + (lock ? ' done' : '') + '"><input type="checkbox" data-sm="' + esc(m.id) + '"' + (F.sm[m.id] ? ' checked' : '') + (lock ? ' disabled' : '') + '>' +
           '<span class="nm"><b>' + esc(m.nama) + '</b><span>Simpatisan' + (m.hubungan ? ' · ' + esc(m.hubungan) : '') + '</span></span>' + (lock ? '<span class="chip ok">Sudah zakat</span>' : '<span class="chip blue">SM</span>') + '</label>';
       }).join('');
+    }
+    if (F.mode === 'KK' && (F.pindah.length || F.smLain.length || kk.hilang)) {
+      anggota += '<div class="note warn" style="margin:8px 0 4px">' + ICON.info + '<span>' + (kk.hilang ? '<b>KK ini sudah tidak ada di sensus.</b> ' : '') +
+        'Jiwa di bawah ini tercatat di setoran ini tetapi <b>sudah tidak di KK ini</b> menurut sensus. Tetap tercentang supaya tidak terhapus; hapus centang hanya bila memang tidak termasuk setoran ini.</span></div>' +
+        F.pindah.map(function (a) {
+          return '<label class="check"><input type="checkbox" data-jm="' + esc(a.id) + '"' + (F.jm[a.id] ? ' checked' : '') + '><span class="nm"><b>' + esc(a.nama) + '</b><span>Tercatat di setoran ini</span></span><span class="chip warn">' + esc(a.ket) + '</span></label>';
+        }).join('') +
+        F.smLain.map(function (m) {
+          return '<label class="check"><input type="checkbox" data-sm="' + esc(m.id) + '"' + (F.sm[m.id] ? ' checked' : '') + '><span class="nm"><b>' + esc(m.nama) + '</b><span>Simpatisan · tercatat di setoran ini</span></span><span class="chip warn">Tidak lagi terkait KK ini</span></label>';
+        }).join('');
     }
     var head = F.mode === 'KK' ? 'KK ' + kk.nama : 'Simpatisan (tanpa KK sensus)';
     Z.app.innerHTML =
@@ -154,7 +180,7 @@
   function upd() {
     var c = S.boot.config, harga = Number(c.Harga_Soq) || 0, kgSoq = Number(c.Kg_Per_Soq) || 2.7, n = totalJiwa();
     var jmN = Object.keys(F.jm).length, smN = Object.keys(F.sm).length;
-    if ($('#fJmCount') && F.kk) $('#fJmCount').textContent = jmN + ' / ' + F.kk.anggota.length + ' dicentang';
+    if ($('#fJmCount') && F.kk) $('#fJmCount').textContent = jmN + ' / ' + (F.kk.anggota.length + (F.pindah ? F.pindah.length : 0)) + ' dicentang';
     if ($('#fLuar')) $('#fLuar').textContent = F.luar;
     if ($('#fLuarNamaW')) $('#fLuarNamaW').classList.toggle('hidden', !F.luar);
     var label = [jmN ? jmN + ' JM' : '', smN ? smN + ' SM' : '', F.luar ? F.luar + ' JM luar' : ''].filter(Boolean).join(' + ') || '0 jiwa';

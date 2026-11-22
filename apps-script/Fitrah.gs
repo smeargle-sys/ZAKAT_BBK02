@@ -46,8 +46,10 @@ function getFitrah_(p) {
   var r = rowsOf_('Setoran_Fitrah', function (x) { return String(x.ID) === String(p.id) && x.Dihapus !== 'Y'; })[0];
   if (!r) throw new Error('Setoran tidak ditemukan.');
   var j = rowsOf_('Setoran_Fitrah_Jiwa', function (x) { return String(x.ID_Setoran) === String(p.id) && x.Dihapus !== 'Y'; });
+  // nama per jiwa ikut dikirim: form Ubah tetap bisa menampilkan jiwa yang sudah pindah KK / tidak ada di sensus (D-45)
+  var nama = {}; j.forEach(function (x) { nama[String(x.Ref_ID)] = String(x.Nama || ''); });
   return { setoran: cleanRow_(r), jm: j.filter(function (x) { return x.Tipe === 'JM'; }).map(function (x) { return String(x.Ref_ID); }),
-    sm: j.filter(function (x) { return x.Tipe === 'SM'; }).map(function (x) { return String(x.Ref_ID); }) };
+    sm: j.filter(function (x) { return x.Tipe === 'SM'; }).map(function (x) { return String(x.Ref_ID); }), nama: nama };
 }
 
 function cleanRow_(r) { var o = {}; Object.keys(r).forEach(function (k) { if (k !== '_row') o[k] = r[k]; }); return o; }
@@ -102,6 +104,7 @@ function simpanFitrah_(p, s) {
   return withLock_(function () {
     var tJ = readTable_('Setoran_Fitrah_Jiwa');
     var editId = p.id ? String(p.id) : '';
+    var namaLama = {}; // nama jiwa di setoran lama: dipakai bila jamaah sudah tidak ada di sensus (D-45)
     // cegah satu jiwa dizakati dua kali dalam setahun
     var dup = tJ.rows.filter(function (r) {
       return String(r.Tahun) === String(tahun) && r.Dihapus !== 'Y' && String(r.ID_Setoran) !== editId &&
@@ -121,7 +124,7 @@ function simpanFitrah_(p, s) {
       if (s.role === 'amil' && String(row.ID_Amil) !== s.idAmil) throw new Error('Amil hanya bisa mengubah setoran yang ia terima sendiri.');
       obj.Diubah_Oleh = s.nama || s.role; obj.Diubah_Waktu = nowIso_();
       updateObject_(tS, row, obj);
-      tJ.rows.filter(function (r) { return String(r.ID_Setoran) === editId && r.Dihapus !== 'Y'; }).forEach(function (r) { updateObject_(tJ, r, { Dihapus: 'Y' }); });
+      tJ.rows.filter(function (r) { return String(r.ID_Setoran) === editId && r.Dihapus !== 'Y'; }).forEach(function (r) { namaLama[String(r.Ref_ID)] = r.Nama; updateObject_(tJ, r, { Dihapus: 'Y' }); });
       id = editId;
     } else {
       // D-24: siapa yang mencatat (bisa admin atas nama amil). Tidak diubah saat setoran diubah.
@@ -129,8 +132,8 @@ function simpanFitrah_(p, s) {
       appendObjects_('Setoran_Fitrah', [obj]);
     }
     appendObjects_('Setoran_Fitrah_Jiwa',
-      jm.map(function (x) { return { ID_Setoran: id, Tahun: tahun, Tipe: 'JM', Ref_ID: x, Nama: namaJM[x] || x }; })
-        .concat(sm.map(function (x) { return { ID_Setoran: id, Tahun: tahun, Tipe: 'SM', Ref_ID: x, Nama: namaSM[x] || x }; })));
+      jm.map(function (x) { return { ID_Setoran: id, Tahun: tahun, Tipe: 'JM', Ref_ID: x, Nama: namaJM[x] || namaLama[x] || x }; })
+        .concat(sm.map(function (x) { return { ID_Setoran: id, Tahun: tahun, Tipe: 'SM', Ref_ID: x, Nama: namaSM[x] || namaLama[x] || x }; })));
 
     // fidyah sekalian (opsional)
     if (p.fidyah && num_(p.fidyah.nominal) > 0) {
