@@ -12,5 +12,5 @@
 // JANGAN UBAH format JSON, hanya value di dalam 'API_URL'
 
 window.ZAKAT_CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbyygSgPwmFyhIJ48Q8E5KAyFn4jKpCgjvMTAQ-Gao4NkIKOu-fgiVTdsR3j1tdSnfc/exec'
+  API_URL: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec'
 };

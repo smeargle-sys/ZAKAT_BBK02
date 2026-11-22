@@ -30,3 +30,4 @@ build/
 
 # Credentials & sensitive files (DO NOT COMMIT)
 # .clasp.json — keep in repo for scriptId tracking, but remove from local if has credentials
+# config.js — commit placeholder only, update with real Web App URL at deployment time
