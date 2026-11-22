@@ -35,12 +35,19 @@
     }).catch(Z.fail);
   };
   function segarMustahiq(d) { MU = d; MU_edit = false; renderMustahiq(); }
+  /** Baca ulang sensus & daftar saat itu juga (lewati cache), mis. setelah data sensus diperbaiki (D-43). */
+  ACT.muReload = function (el) {
+    el.disabled = true; el.innerHTML = '<span class="spin"></span>Memuat…';
+    Z.apiSegar('daftarMustahiq', { tahun: MU.tahun }).then(function (d) { Z.toast('Data sensus & mustahiq diperbarui.'); segarMustahiq(d); })
+      .catch(function (e) { el.disabled = false; el.textContent = 'Muat ulang'; Z.fail(e); });
+  };
 
   function renderMustahiq() {
     var d = MU, admin = S.role === 'admin';
     var perJiwa = d.jiwa ? d.pool / d.jiwa : 0;
     var html = '<div class="wrap"><div class="head"><div class="t"><h1>Mustahiq Zakat Fitrah ' + esc(d.hijriah) + '</h1>' +
       '<p>Penerima bagian mustahiq kelompok · dibagi rata per jiwa · soq bulat per KK, total selalu pas</p></div>' + tahunSelect('muTahun', d.tahun) +
+      '<button type="button" class="btn noprint" data-act="muReload" title="Baca ulang data sensus terbaru">Muat ulang</button>' +
       '<a class="btn noprint" href="#/laporan?jenis=kelompok&amp;tahun=' + d.tahun + '">Cetak untuk Kelompok</a>' +
       '<a class="btn noprint" href="#/laporan?jenis=mustahiq&amp;tahun=' + d.tahun + '">Cetak untuk Daerah</a>' +
       '<a class="btn noprint" href="#/laporan?jenis=serah&amp;tahun=' + d.tahun + '">Lembar penyerahan</a></div>' +
@@ -111,7 +118,8 @@
     var sub = { KK: 'KK sensus', TANPA_KK: 'Tanpa KK (perantau/mandiri)', LUAR: 'Luar sensus' };
     return rows.map(function (g) {
       var orang = g.anggota.map(function (a) {
-        var isi = (a.kepala && g.tipe === 'KK' ? '<b>' + esc(a.nama) + '</b>' : esc(a.nama)) + (a.jiwa > 1 ? ' (' + a.jiwa + ' jiwa)' : '') + ' <span class="chip purple" style="padding:2px 8px;font-size:11px">' + esc(ASNAF_LBL[a.asnaf] || a.asnaf) + '</span>';
+        var isi = (a.kepala && g.tipe === 'KK' ? '<b>' + esc(a.nama) + '</b>' : esc(a.nama)) + (a.jiwa > 1 ? ' (' + a.jiwa + ' jiwa)' : '') + ' <span class="chip purple" style="padding:2px 8px;font-size:11px">' + esc(ASNAF_LBL[a.asnaf] || a.asnaf) + '</span>' +
+          (a.tidakDiSensus ? ' <span class="chip red" style="padding:2px 8px;font-size:11px" title="Jamaah ini sudah tidak ada di tab Jamaah sensus">tidak ada di sensus</span>' : '');
         return admin ? '<button type="button" class="chip" style="border:1px solid var(--line);background:var(--bg);cursor:pointer;min-height:32px" data-act="muUbah" data-id="' + esc(a.id) + '" aria-label="Ubah ' + esc(a.nama) + '">' + isi + '</button>'
           : '<span class="chip" style="border:1px solid var(--line);background:var(--bg)">' + isi + '</span>';
       }).join(' ');

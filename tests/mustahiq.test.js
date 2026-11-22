@@ -178,4 +178,27 @@ assert.strictEqual(g.call({action:'daftarMustahiq',token:peng,tahun:T}).data.gru
 r=g.call({action:'simpanFinalMustahiq',token:admin,tahun:T,items:[{idKeluarga:f1.id,soq:f1.acuan}]}); assert(r.ok);
 assert.strictEqual(r.data.grup.find(x=>x.id===f0.id).final,null,'final lama diganti'); assert.strictEqual(r.data.selisih,0);
 assert(r.data.grup.find(x=>x.id===f0.id).berubah,'penyerahan berbeda dari angka sekarang ditandai');
+
+// ---------- D-43: pengelompokan mengikuti ID Keluarga TERBARU di sensus ----------
+{
+  const ss2=mock.sensusSS(), g2=mock(ss2); g2.setupZakat();
+  g2.simpanPengguna_({user:{nama:'Admin Dua',peran:'ADMIN',pin:'111111'}},null);
+  const ad=g2.call({action:'login',pin:'111111',device:'z'}).data.token;
+  const sen2=g2.readSensus_(); const kk2={}; sen2.jamaah.filter(j=>j.kk).forEach(j=>{(kk2[j.kk]=kk2[j.kk]||[]).push(j);});
+  const kel5=Object.values(kk2).find(a=>a.length>=3&&a.some(j=>j.hub==='A'));
+  const kepala=kel5.find(j=>j.hub==='A'), pindah=kel5.find(j=>j.hub!=='A'), hilang=kel5.filter(j=>j.hub!=='A'&&j!==pindah)[0];
+  const kkLain=Object.keys(kk2).find(k=>k!==kepala.kk);
+  let x=g2.call({action:'simpanMustahiq',token:ad,tahun:2027,op:'tambah',items:[{refId:kepala.id,asnaf:'FAKIR'}]}); assert(x.ok,x.error);
+  assert.strictEqual(x.data.grup.find(q=>q.id===kepala.kk).jiwa,kel5.length);
+  // sensus diperbaiki: satu anggota pindah KK, satu lagi dihapus dari tab Jamaah
+  const sh=ss2.getSheetByName('Jamaah'), hd=sh.data[0], iId=hd.indexOf('ID Jamaah'), iKK=hd.indexOf('ID Keluarga');
+  sh.data.forEach(r=>{ if(r[iId]===pindah.id) r[iKK]=kkLain; });
+  sh.data=sh.data.filter(r=>r[iId]!==hilang.id);
+  x=g2.call({action:'daftarMustahiq',token:ad,tahun:2027,segar:true}); assert(x.ok,x.error);
+  const gk5=x.data.grup.find(q=>q.id===kepala.kk), gl=x.data.grup.find(q=>q.id===kkLain);
+  assert(!gk5.anggota.some(a=>a.refId===pindah.id),'anggota yang pindah KK tidak lagi di KK lama');
+  assert(gl&&gl.anggota.some(a=>a.refId===pindah.id),'anggota yang pindah ikut KK barunya');
+  const ah=gk5.anggota.find(a=>a.refId===hilang.id); assert(ah&&ah.tidakDiSensus,'jamaah yang tidak ada lagi di sensus ditandai');
+  assert.strictEqual(x.data.grup.reduce((s,q)=>s+q.jiwa,0),kel5.length,'total jiwa tetap');
+}
 console.log('mustahiq: lulus');

@@ -30,16 +30,20 @@ function grupMustahiq_(rows, sen) {
   Object.keys(kel).forEach(function (k) { kel[k].anggota.forEach(function (a, i) { urutSensus[a.id] = i; }); });
   var grup = {}, keys = [];
   rows.forEach(function (r) {
-    var luar = r.Tipe === 'LUAR', key = luar ? 'LUAR-' + r.ID : String(r.ID_Keluarga || ('TANPA-KK-' + r.Ref_ID));
+    var luar = r.Tipe === 'LUAR', j = luar ? null : info[String(r.Ref_ID)];
+    // D-43: kelompokkan menurut ID Keluarga TERBARU di sensus (bila jamaah pindah KK, ikut pindah).
+    // ID Keluarga yang tersimpan hanya dipakai bila jamaah sudah tidak ada di sensus.
+    var key = luar ? 'LUAR-' + r.ID : j ? (j.kk || ('TANPA-KK-' + j.id)) : String(r.ID_Keluarga || ('TANPA-KK-' + r.Ref_ID));
     if (!grup[key]) {
       grup[key] = { id: key, tipe: luar ? 'LUAR' : (isTanpaKK_(key) ? 'TANPA_KK' : 'KK'), jiwa: 0, anggota: [],
         nama: luar ? String(r.Nama) : (kel[key] && kel[key].nama ? kel[key].nama : String(r.Nama_KK || r.Nama)) };
       keys.push(key);
     }
-    var g = grup[key], n = luar ? Math.max(1, Math.round(num_(r.Jiwa))) : 1, j = info[String(r.Ref_ID)];
+    var g = grup[key], n = luar ? Math.max(1, Math.round(num_(r.Jiwa))) : 1;
     g.jiwa += n;
-    g.anggota.push({ id: String(r.ID), refId: String(r.Ref_ID || ''), nama: String(r.Nama), asnaf: String(r.Asnaf || 'MISKIN'), jiwa: n,
+    g.anggota.push({ id: String(r.ID), refId: String(r.Ref_ID || ''), asnaf: String(r.Asnaf || 'MISKIN'), jiwa: n,
       kepala: luar || g.tipe === 'TANPA_KK' || !!(j && isKepala_(j.hub)), catatan: String(r.Catatan || ''),
+      tidakDiSensus: !luar && !j, nama: j ? j.nama : String(r.Nama),
       _u: j && urutSensus[j.id] !== undefined ? urutSensus[j.id] : 999 });
   });
   var bobot = { KK: 0, TANPA_KK: 1, LUAR: 2 };
