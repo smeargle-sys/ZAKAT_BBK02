@@ -31,6 +31,15 @@ inclusion: manual
 2. **Backend:**
    - Perbarui file `.gs` di editor (atau `clasp push`).
    - Buka Deploy › Manage deployments › ✏️ › Version: **New version** › Deploy. URL tidak berubah.
+   - **Lewat clasp** (URL `/exec` tetap sama):
+     ```
+     clasp push
+     clasp create-version "<pesan rilis>"            # catat nomor versinya
+     clasp list-deployments                          # ID produksi = yang ada di web/config.js
+     clasp update-deployment <ID-produksi> -V <nomor> -d "<pesan rilis>"
+     ```
+   - **Jangan** memakai `clasp create-deployment`/`clasp deploy`, karena perintah itu membuat URL baru. Jangan memperbarui deployment `@HEAD`.
+   - `apps-script/appsscript.json` **wajib** memuat `"webapp": {"executeAs": "USER_DEPLOYING", "access": "ANYONE_ANONYMOUS"}`. Tanpa blok ini, versi baru kehilangan pengaturan Web App dan `/exec` berhenti berfungsi.
    - Jika ada kolom baru, jalankan `setupZakat` sekali.
 3. **Frontend:** push `main` (perubahan di `web/`). GitHub Pages butuh 1–2 menit. Minta pengguna refresh. Jika perlu, tambahkan query versi pada `<script src="app.js?v=YYYYMMDD">` untuk mematahkan cache.
 4. Tulis laporan rilis di `docs/handoff/YYYY-MM-DD-laporan.md`.

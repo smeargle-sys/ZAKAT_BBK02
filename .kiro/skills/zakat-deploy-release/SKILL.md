@@ -18,6 +18,15 @@ Panduan lengkap ada di steering manual `#release-runbook`. Ringkasan langkah:
 1. Perbarui file `.gs` di editor Apps Script (atau `clasp push` jika `.clasp.json` lokal ada; jangan di-commit).
 2. Buka **Deploy › Manage deployments › ✏️ edit deployment yang ada › Version: New version › Deploy**.
    - **Jangan** membuat deployment baru, karena URL `/exec` akan berubah dan semua HP amil harus diperbarui.
+   - **Lewat clasp** (URL `/exec` tetap sama):
+     ```
+     clasp push
+     clasp create-version "<pesan rilis>"            # catat nomor versinya
+     clasp list-deployments                          # ID produksi = yang ada di web/config.js
+     clasp update-deployment <ID-produksi> -V <nomor> -d "<pesan rilis>"
+     ```
+   - **Jangan** memakai `clasp create-deployment`/`clasp deploy`, karena perintah itu membuat URL baru. Jangan memperbarui deployment `@HEAD`.
+   - `apps-script/appsscript.json` **wajib** memuat `"webapp": {"executeAs": "USER_DEPLOYING", "access": "ANYONE_ANONYMOUS"}`. Tanpa blok ini, versi baru kehilangan pengaturan Web App dan `/exec` berhenti berfungsi.
 3. Jika ada kolom baru: jalankan fungsi `setupZakat` dari editor atau menu Zakat.
 
 ## Frontend (GitHub Pages)
