@@ -1,0 +1,28 @@
+# Log Keputusan (Decision Log)
+
+Keputusan di bawah **mengikat**. Mengubahnya harus lewat konsultan (lihat `.kiro/steering/roles-and-governance.md`). Entri baru ditambah di bawah dengan nomor berikutnya.
+Format: **D-xx · tanggal · sumber** — keputusan. *Alasan/catatan.*
+
+| ID | Tanggal | Sumber | Keputusan |
+|---|---|---|---|
+| D-01 | 2026-11-22 | Pemilik + Konsultan | Stack: Google Sheets + Apps Script Web App + frontend statis di GitHub Pages. Pola akses sama dengan aplikasi Absensi & Sensus BBK02. |
+| D-02 | 2026-11-22 | Konsultan (disetujui pemilik) | **Satu spreadsheet untuk semua tahun**. Tiap tabel punya kolom `Tahun`. Tidak ada file/sheet per tahun. Arsip/rekap per tahun cukup dicetak atau diekspor. |
+| D-03 | 2026-11-22 | Pemilik | SENSUS BBK02 adalah sumber tunggal data KK & jamaah. Data hanya dibaca, tidak disalin. |
+| D-04 | 2026-11-22 | Pemilik | Jiwa muzakki dipilih **per anggota** (centang). Anggota Mondok/Kerja Luar **ikut dihitung**. |
+| D-05 | 2026-11-22 | Pemilik | Simpatisan (SM) **boleh melekat ke satu KK sensus** (mis. saudara jauh), dipilih dari data sensus, atau berdiri sendiri. JM luar = jamaah kelompok lain, dicatat terpisah (jumlah jiwa). |
+| D-06 | 2026-11-22 | Pemilik | Lebih bayar titip uang **default masuk Usaha Bersama (UB)**, dengan opsi dikembalikan. Dicatat per setoran dan dipantau: terkumpul, sudah diserahkan, masih dipegang amil. |
+| D-07 | 2026-11-22 | Pemilik | Fidyah dicatat sebagai jenis tersendiri, **tidak ikut pembagian 40/45/15**. Tarif per hari dikonfigurasi dan bisa berbeda tiap tahun. |
+| D-08 | 2026-11-22 | Pemilik | Harga titip beras per soq dikonfigurasi per tahun. Pembelian beras dari uang titipan dicatat (kg vs kebutuhan). |
+| D-09 | 2026-11-22 | Pemilik | Saham amil bisa dikonfigurasi (default 1). **Angka final bagian amil diisi manual sesuai hasil musyawarah**, tanpa aturan pembulatan tetap. Sistem hanya memberi hitungan acuan dan sisa. |
+| D-10 | 2026-11-22 | Pemilik | Zakat mal & tijaroh: 45% Mustahiq **disetor seluruhnya ke Daerah**. Semua persentase dan tujuannya bisa dikonfigurasi. |
+| D-11 | 2026-11-22 | Pemilik | Zakat **mal boleh susulan** setelah batas (ditandai lampiran SUSULAN, dibagi terpisah). Zakat **fitrah tidak boleh lewat batas** sesuai syariat (sebelum shalat Ied). |
+| D-12 | 2026-11-22 | Pemilik | Setoran "Mal + Tijaroh" tanpa rincian **diperbolehkan** (jenis MAL_TIJAROH). |
+| D-13 | 2026-11-22 | Pemilik | Data 2024, 2025, 2026 diimpor dari xlsx lama. Tren YoY dimulai 2024. |
+| D-14 | 2026-11-22 | Konsultan | Pembulatan pembagian memakai **metode sisa terbesar**, sehingga total pos selalu = total diterima (memperbaiki 325 vs 324 di sheet lama). |
+| D-15 | 2026-11-22 | Pemilik | Login cukup dengan **PIN pribadi**, nama dikenali dari PIN (tanpa memilih nama). PIN amil diatur di halaman Amil. Admin & Pengurus berupa akun bernama + PIN (seperti Admin/Petugas di absensi). |
+| D-16 | 2026-11-22 | Pemilik | Manajemen & pembagian **mustahiq** dijadikan **backlog setelah MVP** (lihat `backlog.md`). |
+| D-17 | 2026-11-22 | Konsultan | Setelah batas fitrah, amil terkunci. Admin masih bisa mencatat **susulan administrasi** dengan syarat tanggal setor ≤ tanggal batas (uang/beras sudah diterima sebelum batas). |
+| D-18 | 2026-11-22 | Konsultan | Jamaah sensus tanpa ID Keluarga diperlakukan sebagai keluarga sendiri (`TANPA-KK-<ID>`). Perbaikan datanya dilakukan di aplikasi Sensus. |
+| D-19 | 2026-11-22 | Konsultan | Jiwa sensus = semua baris tab Jamaah (termasuk yang di luar). Angkanya di-snapshot saat tahun ditutup untuk tren. |
+| D-20 | 2026-11-22 | Konsultan | Kolom "Kembalian" di sheet lama dibaca sebagai **selisih bayar**: positif = lebih bayar (ke UB), negatif = kurang bayar. |
+| D-21 | 2026-11-22 | Konsultan [teknis] | Router API dibuat lewat fungsi `routes_()`. Test memakai simulasi Apps Script di Node dengan **data sensus sintetis**. Repo tidak boleh memuat data jamaah asli. |

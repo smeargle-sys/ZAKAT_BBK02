@@ -1,0 +1,32 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules
+node_modules/
+package-lock.json
+yarn.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test artifacts
+tests/shots/
+*.pyc
+__pycache__/
+
+# Local config (sensitive)
+.clasp.json.local
+.env
+.env.local
+
+# Build/dist
+dist/
+build/
+
+# Credentials & sensitive files (DO NOT COMMIT)
+# .clasp.json — keep in repo for scriptId tracking, but remove from local if has credentials

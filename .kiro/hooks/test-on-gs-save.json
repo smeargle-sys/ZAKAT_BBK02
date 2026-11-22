@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Jalankan semua test saat file backend/test disimpan",
+      "description": "Setiap perubahan .gs atau test harus tetap lulus (simulasi Apps Script, data sintetis).",
+      "trigger": "PostFileSave",
+      "matcher": "(apps-script/.*\\.(gs|json)|tests/.*\\.js)$",
+      "action": { "type": "command", "command": "npm test" },
+      "timeout": 180
+    }
+  ]
+}

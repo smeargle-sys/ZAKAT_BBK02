@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Cek wewenang saat spec atau skema berubah",
+      "description": "Mengingatkan Kiro bahwa aturan zakat, model data, dan UX baru adalah wewenang konsultan.",
+      "trigger": "PostFileSave",
+      "matcher": "(\\.kiro/specs/.*(requirements|design)\\.md|apps-script/00_Config\\.gs|\\.kiro/steering/domain-zakat\\.md)$",
+      "action": {
+        "type": "agent",
+        "prompt": "File yang baru disimpan menyentuh spec/skema/aturan domain. Periksa sesuai .kiro/steering/roles-and-governance.md: apakah perubahan ini mengubah aturan zakat/syariat, arti/urutan kolom, sheet baru, peran/akses, atau alur UX yang belum ada di docs/decisions.md? Jika YA dan belum ada keputusan bertanggal, kembalikan perubahan yang bersifat aturan, buat permintaan memakai skill consultant-handoff, dan tandai task terkait ⏸. Jika TIDAK (hanya teknis/kolom tambahan di kanan yang sudah diputuskan), lanjutkan dan sebutkan singkat alasannya."
+      }
+    }
+  ]
+}
